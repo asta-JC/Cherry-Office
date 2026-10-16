@@ -1,61 +1,102 @@
-# Cherry Office
+<div align="center">
 
-A fast, offline document viewer for Android with a futuristic dark glossy cherry-red neon design. Built with Kotlin and Jetpack Compose (Material 3).
+# 🍒 Cherry Office
 
-## Features
+<p align="center">
+  <img src="app/src/main/res/drawable/icon.png" width="108" alt="Cherry Office Logo" />
+</p>
 
-- **PDF viewer** — renders with Android's `PdfRenderer` as a continuous vertical page list, pinch-to-zoom around your fingers (1x–5x), one-finger pan when zoomed, double-tap to zoom, night mode, auto page indicator (`3 / 12`).
-- **Word (.docx) viewer** — parses Office Open XML offline (no new dependencies) into styled HTML and shows it as white A4-like sheets on a dark backdrop, like Word's print layout. Preserves fonts, sizes, bold/italic/underline/strikethrough, colors, highlights, headings, alignment, spacing, indents, nested bullet/numbered lists, tables (borders, merges, shading, widths), images, hyperlinks (tappable), headers/footers, page numbers, page breaks and footnotes. Native WebView pinch-to-zoom + page indicator.
-- **Text viewer** — monospace typography, adjustable size, search, night mode.
-- **Excel / PowerPoint** — formatted tabbed previews.
-- **Open from anywhere** — `ACTION_VIEW` / `ACTION_SEND` intent filters, Storage Access Framework picker, recent-files history (Room), share / open-with-another-app.
+> A fast, offline document viewer for Android featuring high-fidelity PDF, Word (.docx), Excel, PowerPoint, and text rendering with a futuristic cherry dark theme. 📄✨
 
-## Tech stack
+</div>
 
-Kotlin · Jetpack Compose Material 3 · Navigation 3 · MVVM + StateFlow · Hilt · Room · DataStore · PdfRenderer · WebView · Coroutines (`Dispatchers.IO` for parsing/rendering) · JUnit tests.
+---
 
-## Project structure
+## 📱 Overview
 
+**Cherry Office** is a high-performance offline document viewing suite for Android built with Jetpack Compose and Material 3. Designed with a dark neon cherry aesthetic, it opens PDFs, Word documents (.docx), spreadsheets, presentations, and plain text files with zero external cloud dependencies.
+
+---
+
+## ✨ Key Features
+
+- 📕 **High-Fidelity PDF Viewer**: Native page rendering via Android's `PdfRenderer`, continuous vertical scrolling, pinch-to-zoom (1x–5x), one-finger pan, and night mode.
+- 📝 **Zero-Dependency Word (.docx) Viewer**: Parses Office Open XML directly offline into styled HTML and displays it in white A4 print layout sheets with full table, image, bullet, styling, and footnote support.
+- 📊 **Excel & PowerPoint Previews**: Formatted tabbed preview cards for spreadsheets (`.xls`, `.xlsx`) and slide decks (`.ppt`, `.pptx`).
+- 📜 **Monospace Text Viewer**: Clean typography for `.txt` and source files with adjustable font sizes, search, and dark mode.
+- 🌐 **Open from Anywhere**: Handles `ACTION_VIEW` and `ACTION_SEND` intents, Storage Access Framework (SAF) file picker, and recent files history.
+
+---
+
+## 📄 Supported Formats
+
+| Document Format | Engine / Technology | Key Highlights |
+| :--- | :--- | :--- |
+| **PDF** (`.pdf`) | Android `PdfRenderer` | Continuous scroll, pinch-zoom (1x–5x), page pill indicator |
+| **Word** (`.docx`) | Custom OOXML → HTML Parser | Offline styling, tables, images, hyperlinks, A4 sheet layout |
+| **Excel** (`.xlsx`, `.xls`) | Formatted tabular engine | Multi-sheet previews, row/column alignment |
+| **PowerPoint** (`.pptx`, `.ppt`) | Presentation preview engine | Slide-by-slide card previews |
+| **Text** (`.txt`, `.csv`) | Native Compose Typography | Monospace font, search, night mode |
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+- **UI Toolkit**: [Jetpack Compose](https://developer.android.com/jetpack/compose) & [Material 3](https://m3.material.io/)
+- **Navigation**: Jetpack Navigation 3 (`androidx.navigation3`)
+- **Document Engines**: Android `PdfRenderer`, pure-JVM OOXML parser, Android `WebView`
+- **Dependency Injection**: [Hilt](https://dagger.dev/hilt/) (Dagger)
+- **Persistence**: Room Database (recent files history) & DataStore Preferences
+- **Concurrency**: Kotlin Coroutines (`Dispatchers.IO`) & `StateFlow`
+
+---
+
+## 📂 Project Structure
+
+```tree
+com.asta.cherryoffice/
+├── data/                   # Document entities, Room database, repositories
+├── di/                     # Hilt DI modules
+├── docx/                   # Pure-JVM DOCX to HTML parser & document file reader
+├── ui/                     # UI components, home screen, settings, theme
+├── viewers/                # Dedicated viewers: PdfViewer, WordViewer, RichDocumentViewer, TextViewer
+├── utils/                  # Document URI helpers, format detection, MIME resolvers
+├── CherryOfficeApplication.kt # Application class
+└── MainActivity.kt         # Entry point activity & intent handler
 ```
-app/src/main/java/com/asta/cherryoffice/
-├── MainActivity.kt                 # intent handling (VIEW/SEND) + nav graph wiring
-├── ui/viewer/
-│   ├── PdfViewer.kt                # shared-zoom-state PDF list (scale + pan + double-tap)
-│   ├── WordViewer.kt               # WebView host: zoom, links, page indicator, errors
-│   ├── RichDocumentViewer.kt       # Excel / PowerPoint previews
-│   ├── TextViewer.kt / ViewerScreen.kt / ErrorScreen.kt / ViewerViewModel.kt
-├── docx/
-│   ├── DocxToHtml.kt               # pure-JVM .docx → HTML (unit-testable, zero Android deps)
-│   └── DocxFileReader.kt           # Android glue: Uri I/O, image downsampling, friendly errors
-├── ui/home/ ui/settings/ ui/theme/ ui/components/ ui/navigation/
-├── data/ (Room: DocumentEntity/Dao/Database, repositories, models)
-└── utils/DocumentUtils.kt
-```
 
-## Build & test
+---
 
-Requirements: Android Studio (recent), JDK 17, Android SDK 37 (minSdk 24).
+## 🚀 Getting Started & Build Instructions
 
-```bash
-./gradlew :app:assembleDebug          # APK at app/build/outputs/apk/debug/
-./gradlew :app:testDebugUnitTest      # unit tests (19 tests, incl. 7 DOCX converter tests)
-```
+### Prerequisites
+- Android Studio Ladybug or newer
+- JDK 17 or higher
+- Android SDK 24+ (Target SDK 34+)
 
-## Testing the DOCX viewer
+### Build Steps
 
-A ready-made sample lives at `app/src/test/resources/sample.docx` — headings, styled runs, nested bullets, numbered steps, a merged/shaded table, an image, a hyperlink, a page break, page numbers, a footnote, header/footer:
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/asta-JC/Cherry-Office.git
+   cd CherryOffice
+   ```
 
-```bash
-adb push app/src/test/resources/sample.docx /sdcard/Download/sample.docx
-```
+2. **Open in Android Studio**:
+   - Open Android Studio and select **Open**.
+   - Navigate to the cloned `CherryOffice` directory and let Gradle sync.
 
-Then open it from Cherry Office and check: paper-like sheets, pinch-zoom, `Page X / N` pill while scrolling, tappable link. Regenerate it with `python3 make_sample_docx.py sample.docx` (script kept outside the repo temp files; uses only the Python standard library).
+3. **Build & Run**:
+   - Connect an Android device or start an emulator.
+   - Run the app via Android Studio or execute via terminal:
+     ```bash
+     ./gradlew :app:assembleDebug
+     ```
 
-## Notes
-
-- DOCX→HTML approach was chosen over offline DOCX→PDF conversion (no reliable lightweight on-device converter) and full native Compose layout (browser engine handles tables/wrapping best). See `DocxToHtml.kt` header for details.
-- Large photos embedded in .docx are downsampled (≤1600px) into app cache before display.
-- Password-protected or corrupted files show a friendly message, never a crash.
+4. **Run Unit Tests**:
+   ```bash
+   ./gradlew :app:testDebugUnitTest
+   ```
 
 ---
 
@@ -68,4 +109,3 @@ This project is developed as part of Asta's project series. Feel free to use and
 <p align="center">
   Made with ❤️ & 🍒 by Asta
 </p>
-
