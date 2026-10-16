@@ -56,3 +56,16 @@ Then open it from Cherry Office and check: paper-like sheets, pinch-zoom, `Page 
 - DOCX→HTML approach was chosen over offline DOCX→PDF conversion (no reliable lightweight on-device converter) and full native Compose layout (browser engine handles tables/wrapping best). See `DocxToHtml.kt` header for details.
 - Large photos embedded in .docx are downsampled (≤1600px) into app cache before display.
 - Password-protected or corrupted files show a friendly message, never a crash.
+
+---
+
+## 📄 License
+
+This project is developed as part of Asta's project series. Feel free to use and adapt for personal and educational use!
+
+---
+
+<p align="center">
+  Made with ❤️ & 🍒 by Asta
+</p>
+
