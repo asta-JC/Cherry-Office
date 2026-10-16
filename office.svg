@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512">
+  <!-- Background -->
+  <rect width="108" height="108" rx="24" fill="#F50D46"/>
+
+  <!-- Cherry Stem & Leaf -->
+  <path d="M54 31 C54 22, 61 17, 67 15" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M54 24 C45 18, 38 22, 42 28 C46 31, 51 28, 54 24 Z" fill="#FFFFFF"/>
+
+  <!-- Document Body -->
+  <rect x="33" y="31" width="42" height="48" rx="9" fill="#FFFFFF"/>
+
+  <!-- Office Document Lines & Mini Cherry Badge -->
+  <line x1="41" y1="44" x2="55" y2="44" stroke="#F50D46" stroke-width="4" stroke-linecap="round"/>
+  <line x1="41" y1="54" x2="67" y2="54" stroke="#F50D46" stroke-width="4" stroke-linecap="round"/>
+  <line x1="41" y1="64" x2="67" y2="64" stroke="#F50D46" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="64" cy="44" r="3.5" fill="#F50D46"/>
+</svg>
