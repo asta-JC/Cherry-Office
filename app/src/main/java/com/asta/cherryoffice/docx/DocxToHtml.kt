@@ -753,6 +753,9 @@ object DocxToHtmlConverter {
                             else -> sb.append("<br>")
                         }
                     }
+                    "lastRenderedPageBreak" -> {
+                        sb.append("<span class=\"pagebreak\" data-page-break-before></span>")
+                    }
                     "sym" -> {
                         // Symbol font character, e.g. Wingdings bullets.
                         val code = attr(c, "char") ?: continue
@@ -928,7 +931,7 @@ object DocxToHtmlConverter {
             try {
                 var bordersCss = ""
                 var align = ""
-                var widthCss = "width:100%;"
+                var widthCss = "width:100%;min-width:100%;"
                 var cellMarginPx = 4f
                 val gridCols = ArrayList<Int>()
                 val rows = ArrayList<Element>()
@@ -946,8 +949,8 @@ object DocxToHtmlConverter {
                                     val w = attr(p, "w")?.toFloatOrNull()
                                     val t = attr(p, "type")
                                     if (w != null && w > 0) {
-                                        widthCss = if (t == "pct") "width:${w / 50f}%;"
-                                        else "width:${dxaToPx(w.toInt()).px1()}px;max-width:100%;"
+                                        widthCss = if (t == "pct") "width:${w / 50f}%;min-width:100%;"
+                                        else "width:100%;min-width:${dxaToPx(w.toInt()).px1()}px;"
                                     }
                                 }
                                 "cellMar" -> for (m in childElements(p)) {
@@ -1045,6 +1048,7 @@ object DocxToHtmlConverter {
                     }
                 }
 
+                out.append("<div class=\"table-container\">")
                 out.append("<table style=\"").append(widthCss).append(align)
                     .append("border-collapse:collapse;")
                 if (bordersCss.startsWith("border:")) out.append(bordersCss)
@@ -1052,9 +1056,12 @@ object DocxToHtmlConverter {
                 if (gridCols.isNotEmpty()) {
                     out.append("<colgroup>")
                     for (g in gridCols) {
+                        val colMinPx = maxOf(dxaToPx(g), 70f).px1()
                         out.append("<col style=\"width:")
                             .append(String.format(Locale.US, "%.2f", g * 100f / totalGrid))
-                            .append("%;\">")
+                            .append("%;min-width:")
+                            .append(colMinPx)
+                            .append("px;\">")
                     }
                     out.append("</colgroup>")
                 }
@@ -1076,7 +1083,8 @@ object DocxToHtmlConverter {
                                         val w = attr(pp, "w")?.toFloatOrNull()
                                         val t = attr(pp, "type")
                                         if (w != null && w > 0 && t != "pct") {
-                                            css.append("width:").append(dxaToPx(w.toInt()).px1()).append("px;")
+                                            val px = dxaToPx(w.toInt())
+                                            css.append("min-width:").append(maxOf(px, 70f).px1()).append("px;")
                                         }
                                     }
                                     "shd" -> cleanColor(attr(pp, "fill"))?.let {
@@ -1093,12 +1101,13 @@ object DocxToHtmlConverter {
                                 }
                             }
                         }
+                        css.append("min-width:70px;word-break:normal;white-space:normal;")
                         css.append("vertical-align:").append(vAlign).append(";")
-                        css.append("padding:").append(cellMarginPx.px1()).append("px;")
+                        css.append("padding:").append(maxOf(cellMarginPx, 4f).px1()).append("px;")
                         if (!bordersCss.startsWith("border:") && bordersCss.isNotEmpty()) {
                             css.append(bordersCss)
                         } else if (bordersCss.isEmpty()) {
-                            css.append("border:1px solid #999;")
+                            css.append("border:1px solid #d1d5db;")
                         }
                         out.append(" style=\"").append(css).append("\">")
                         // Cell content: paragraphs + nested tables.
@@ -1110,7 +1119,7 @@ object DocxToHtmlConverter {
                     }
                     out.append("</tr>")
                 }
-                out.append("</table>")
+                out.append("</table></div>")
             } finally {
                 inTableDepth--
             }
@@ -1128,83 +1137,126 @@ object DocxToHtmlConverter {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=860, initial-scale=1.0, user-scalable=yes">
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:#161216;color:#111827;
- font-family:Calibri,'Segoe UI',Arial,sans-serif;font-size:11pt;line-height:1.4}
-#pages{max-width:860px;margin:0 auto;padding:12px 12px 140px;position:relative}
-.sheet{background:#ffffff;color:#111827;border-radius:6px;
- box-shadow:0 8px 28px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);
- margin:0 auto 16px;padding:44px 46px;overflow:hidden}
-.sheet-head{border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:9pt;
- margin-bottom:14px;padding-bottom:8px}
-.sheet-foot{border-top:1px solid #e5e7eb;color:#6b7280;font-size:9pt;
- margin-top:14px;padding-top:8px;text-align:center}
-.sheet-body{min-height:600px}
-h1{font-size:20pt;margin:12px 0 8px}h2{font-size:16pt;margin:10px 0 6px}
-h3{font-size:13pt;margin:8px 0 5px}h4{font-size:11pt;margin:6px 0 4px}
-h5,h6{font-size:10pt;margin:4px 0 3px}
-p{margin:0 0 8px}p.empty{margin:0 0 4px;min-height:6px}
-ul,ol{margin:4px 0 8px;padding-left:24px}
+html,body{margin:0;padding:0;background:#141118;color:#111827;
+ font-family:Calibri,'Segoe UI',-apple-system,Roboto,Arial,sans-serif;font-size:11pt;line-height:1.45}
+body.dark-mode{background:#0E0C12 !important;color:#E8E5EE !important}
+body.dark-mode .sheet{background:#1C1824 !important;color:#E8E5EE !important;border:1px solid #2B2538 !important;box-shadow:0 6px 24px rgba(0,0,0,.7) !important}
+body.dark-mode .sheet-head,body.dark-mode .sheet-foot{border-color:#2B2538 !important;color:#9A92A6 !important}
+body.dark-mode td,body.dark-mode th{border-color:#383046 !important;color:#E8E5EE !important}
+body.dark-mode a{color:#60A5FA !important}
+body.dark-mode .pagebreak{border-top-color:#383046 !important}
+body.dark-mode .pagebreak::after{background:#1C1824 !important;color:#9A92A6 !important}
+body.dark-mode .unsupported{color:#64748B !important}
+
+#pages,#content{width:816px;margin:0 auto;padding:18px 0 140px;position:relative}
+.sheet{width:816px;min-height:1056px;background:#FFFFFF;color:#111827;border-radius:4px;
+ box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);margin:0 auto 20px;
+ padding:64px 72px;position:relative;overflow:hidden;word-wrap:normal;overflow-wrap:break-word}
+.sheet-head{border-bottom:1px solid #E5E7EB;color:#6B7280;font-size:9pt;
+ margin-bottom:18px;padding-bottom:8px}
+.sheet-foot{border-top:1px solid #E5E7EB;color:#6B7280;font-size:9pt;
+ margin-top:18px;padding-top:8px;text-align:center}
+.sheet-body{min-height:860px}
+h1{font-size:18pt;margin:14px 0 8px;font-weight:bold}
+h2{font-size:14pt;margin:12px 0 6px;font-weight:bold}
+h3{font-size:12pt;margin:10px 0 5px;font-weight:bold}
+h4{font-size:11pt;margin:8px 0 4px;font-weight:bold}
+h5,h6{font-size:10pt;margin:6px 0 3px}
+p{margin:0 0 10px;line-height:1.45;word-break:normal}p.empty{margin:0 0 4px;min-height:8px}
+ul,ol{margin:4px 0 8px;padding-left:28px}
 li{margin:2px 0}
-table{border-collapse:collapse;max-width:100%;margin:8px 0;font-size:10pt}
+.table-container{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0}
+table{border-collapse:collapse;width:100%;min-width:100%;max-width:none;margin:0;font-size:10pt;word-break:normal}
+td,th{padding:6px 10px;vertical-align:top;min-width:70px;word-break:normal !important;overflow-wrap:normal !important;white-space:normal}
 img{max-width:100%;height:auto}
-a{color:#1a56db}.fnref{text-decoration:none}
-.unsupported{color:#9ca3af;font-style:italic}
+a{color:#1A56DB}.fnref{text-decoration:none}
+.unsupported{color:#9CA3AF;font-style:italic}
 .endnotes h2{font-size:14pt}
-.shape-text{display:inline-block;border:1px dashed #9ca3af;padding:6px;margin:4px 0}
+.shape-text{display:inline-block;border:1px dashed #9CA3AF;padding:6px;margin:4px 0}
+.pagebreak{display:block;height:1px;border-top:1px dashed #CBD5E1;margin:24px 0;position:relative;text-align:center;clear:both}
+.pagebreak::after{content:'PAGE BREAK';position:relative;top:-10px;background:#FFFFFF;padding:0 8px;font-size:8pt;color:#94A3B8;letter-spacing:.5px}
 </style>
 </head>
 <body>
-<div id="content">${content}</div>
+<div id="content">
+  <div class="sheet">
+    ${if (headerHtml.isNotBlank()) "<div class=\"sheet-head\">$headerHtml</div>" else ""}
+    <div class="sheet-body">
+      $content
+    </div>
+    ${if (footerHtml.isNotBlank()) "<div class=\"sheet-foot\">$footerHtml</div>" else ""}
+  </div>
+</div>
+<template id="raw-blocks">${content}</template>
 <template id="tpl-header">${headerHtml}</template>
 <template id="tpl-footer">${footerHtml}</template>
 <div id="pages"></div>
 <script>
 (function(){
-var RATIO=1.4142,timer=null;
-function pageHeight(){var p=document.getElementById('pages');var w=p?p.clientWidth:600;return Math.round(w*RATIO);}
+var timer=null;
+var USABLE_H=920;
 function paginate(){
- var src=document.getElementById('content'),pages=document.getElementById('pages');
- if(!src||!pages)return;
- var blocks=Array.prototype.slice.call(src.childNodes);
- // Hide the source only now that we are definitely paginating, so that if
- // JavaScript is ever disabled/broken the raw (unpaginated) document still
- // shows instead of a blank page.
- src.style.display='none';
- pages.innerHTML='';window.__tops=[];
- var H=pageHeight();
+ var raw=document.getElementById('raw-blocks');
+ var src=document.getElementById('content');
+ var pages=document.getElementById('pages');
+ if(!raw||!pages)return;
+ var tplContent=raw.content?raw.content.cloneNode(true):null;
+ var blocks=[];
+ if(tplContent){
+  blocks=Array.prototype.slice.call(tplContent.childNodes);
+ }else{
+  var div=document.createElement('div');div.innerHTML=raw.innerHTML;
+  blocks=Array.prototype.slice.call(div.childNodes);
+ }
+ blocks=blocks.filter(function(b){return b.nodeType===1||(b.nodeType===3&&b.textContent.trim().length>0);});
+ if(blocks.length===0)return;
  var head=document.getElementById('tpl-header'),foot=document.getElementById('tpl-footer');
+ var headHtml=head?head.innerHTML:'';
+ var footHtml=foot?foot.innerHTML:'';
+ pages.innerHTML='';window.__tops=[];
  var idx=0,body=null;
  function newsheet(){
   idx++;
-  var s=document.createElement('div');s.className='sheet';
-  if(head&&head.innerHTML.replace(/^\s+|\s+$/g,'')){
-   var h=document.createElement('div');h.className='sheet-head';h.innerHTML=head.innerHTML;s.appendChild(h);}
-  body=document.createElement('div');body.className='sheet-body';body.style.minHeight=H+'px';s.appendChild(body);
-  if(foot&&foot.innerHTML.replace(/^\s+|\s+$/g,'')){
-   var f=document.createElement('div');f.className='sheet-foot';f.innerHTML=foot.innerHTML;s.appendChild(f);}
+  var s=document.createElement('div');s.className='sheet';s.id='sheet-'+idx;
+  if(headHtml&&headHtml.replace(/^\s+|\s+$/g,'')){
+   var h=document.createElement('div');h.className='sheet-head';h.innerHTML=headHtml;s.appendChild(h);}
+  body=document.createElement('div');body.className='sheet-body';s.appendChild(body);
+  if(footHtml&&footHtml.replace(/^\s+|\s+$/g,'')){
+   var f=document.createElement('div');f.className='sheet-foot';f.innerHTML=footHtml;s.appendChild(f);}
   s.querySelectorAll('.pnum').forEach(function(e){e.textContent=idx;});
   pages.appendChild(s);
   window.__tops.push(s.offsetTop);
  }
  newsheet();
- blocks.forEach(function(b){
-  if(!b||b.nodeType!==1)return;
-  var force=b.hasAttribute&&b.hasAttribute('data-page-break-before');
+ for(var i=0;i<blocks.length;i++){
+  var b=blocks[i];
+  var force=b.nodeType===1&&(
+   (b.hasAttribute&&b.hasAttribute('data-page-break-before'))||
+   (b.classList&&b.classList.contains('pagebreak'))||
+   (b.querySelector&&b.querySelector('[data-page-break-before]'))||
+   (b.querySelector&&b.querySelector('.pagebreak'))
+  );
   if(force&&body.childNodes.length>0)newsheet();
   body.appendChild(b);
-  if(body.scrollHeight>H+2){
-   if(body.childNodes.length>1){body.removeChild(b);newsheet();body.appendChild(b);
-    if(body.scrollHeight>H+2)body.style.minHeight='auto';}
-   else{body.style.minHeight='auto';}
+  if(body.offsetHeight>USABLE_H){
+   if(body.childNodes.length>1){
+    body.removeChild(b);
+    newsheet();
+    body.appendChild(b);
+   }
   }
- });
+ }
+ if(idx>0&&body&&body.childNodes.length>0){
+  if(src)src.style.display='none';
+ }
  pages.querySelectorAll('.ptotal').forEach(function(e){e.textContent=idx;});
+ window.__effectivePages=idx;
  if(window.Android&&window.Android.onPagesReady){try{window.Android.onPagesReady(idx);}catch(err){}}
 }
-function schedule(){if(timer)clearTimeout(timer);timer=setTimeout(paginate,120);}
+function schedule(){if(timer)clearTimeout(timer);timer=setTimeout(paginate,80);}
 var pages=document.getElementById('pages');
 pages.addEventListener('load',function(e){if(e.target&&e.target.tagName==='IMG')schedule();},true);
 document.addEventListener('DOMContentLoaded',paginate);
@@ -1212,9 +1264,12 @@ window.addEventListener('load',paginate);
 window.addEventListener('resize',schedule);
 window.__repaginate=schedule;
 window.__currentPage=function(y){
- var t=window.__tops||[0],i=0;
- for(var k=0;k<t.length;k++){if(y>=t[k]-8)i=k;}
- return i+1;
+ if(window.__tops&&window.__tops.length>1){
+  var t=window.__tops,i=0;
+  for(var k=0;k<t.length;k++){if(y>=t[k]-30)i=k;}
+  return i+1;
+ }
+ return 1;
 };
 paginate();
 })();
@@ -1394,12 +1449,22 @@ private fun RunStyle.toCss(): String {
 private fun ParaStyle.toCss(): String {
     val sb = StringBuilder()
     align?.let { sb.append("text-align:").append(it).append(";") }
-    leftDxa?.let { sb.append("margin-left:").append(dxaToPx(it).px1()).append("px;") }
-    rightDxa?.let { sb.append("margin-right:").append(dxaToPx(it).px1()).append("px;") }
-    firstLineDxa?.let { sb.append("text-indent:").append(dxaToPx(it).px1()).append("px;") }
+    leftDxa?.let {
+        val px = dxaToPx(it)
+        sb.append("margin-left:min(").append(px.px1()).append("px, 30%);")
+    }
+    rightDxa?.let {
+        val px = dxaToPx(it)
+        sb.append("margin-right:min(").append(px.px1()).append("px, 30%);")
+    }
+    firstLineDxa?.let {
+        val px = dxaToPx(it)
+        sb.append("text-indent:min(").append(px.px1()).append("px, 48px);")
+    }
     hangingDxa?.let {
-        sb.append("padding-left:").append(dxaToPx(it).px1()).append("px;")
-        sb.append("text-indent:-").append(dxaToPx(it).px1()).append("px;")
+        val px = dxaToPx(it)
+        sb.append("padding-left:min(").append(px.px1()).append("px, 30%);")
+        sb.append("text-indent:-min(").append(px.px1()).append("px, 30%);")
     }
     beforePt?.let { sb.append("margin-top:").append(ptToPx(it).px1()).append("px;") }
     afterPt?.let { sb.append("margin-bottom:").append(ptToPx(it).px1()).append("px;") }

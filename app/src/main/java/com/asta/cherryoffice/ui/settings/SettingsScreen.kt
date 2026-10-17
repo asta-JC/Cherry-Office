@@ -44,9 +44,10 @@ fun SettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
                     .padding(horizontal = 20.dp)
             ) {
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Top Bar
                 Row(

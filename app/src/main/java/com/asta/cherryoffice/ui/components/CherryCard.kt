@@ -20,7 +20,7 @@ import com.asta.cherryoffice.ui.theme.CherryTheme
 fun CherryCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
-    shape: Shape = RoundedCornerShape(26.dp),
+    shape: Shape = RoundedCornerShape(16.dp),
     borderWidth: Dp = 1.dp,
     borderColor: Color = CherryTheme.colors.borderTranslucent,
     containerColor: Color = CherryTheme.colors.card,

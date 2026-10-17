@@ -97,6 +97,10 @@ private class FakeDocumentDao : DocumentDao {
         return id
     }
 
+    override suspend fun insertDocuments(documents: List<DocumentEntity>) {
+        documents.forEach { insertOrUpdateDocument(it) }
+    }
+
     override suspend fun updateDocument(document: DocumentEntity) {
         documents[document.id] = document
     }

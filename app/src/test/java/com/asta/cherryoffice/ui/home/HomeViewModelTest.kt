@@ -153,6 +153,45 @@ class HomeViewModelTest {
         val state = viewModel.uiState.value
         assertTrue(state.recentDocuments.isEmpty())
     }
+
+    @Test
+    fun onSortOrderChanged_sortsByNameCorrectly() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        val docZ = DocumentItem(id = 1, uri = "content://1", name = "Zebra.pdf", mimeType = "application/pdf", extension = "pdf", size = 10L)
+        val docA = DocumentItem(id = 2, uri = "content://2", name = "Apple.pdf", mimeType = "application/pdf", extension = "pdf", size = 20L)
+        fakeRepository.addDocument(docZ)
+        fakeRepository.addDocument(docA)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onSortOrderChanged(DocumentSortOrder.NAME_ASC)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("Apple.pdf", state.recentDocuments[0].name)
+        assertEquals("Zebra.pdf", state.recentDocuments[1].name)
+    }
+
+    @Test
+    fun uiState_calculatesCategoryCountsCorrectly() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+
+        val pdfDoc = DocumentItem(id = 1, uri = "content://1", name = "Book.pdf", mimeType = "application/pdf", extension = "pdf", size = 10L)
+        val excelDoc = DocumentItem(id = 2, uri = "content://2", name = "Data.xlsx", mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", extension = "xlsx", size = 20L)
+        fakeRepository.addDocument(pdfDoc)
+        fakeRepository.addDocument(excelDoc)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.pdfCount)
+        assertEquals(1, state.excelCount)
+        assertEquals(0, state.wordCount)
+        assertEquals(2, state.totalDocumentCount)
+    }
 }
 
 private class FakeDocumentRepository : DocumentRepository {
@@ -178,6 +217,10 @@ private class FakeDocumentRepository : DocumentRepository {
         val newDoc = document.copy(id = id)
         docsState.value = docsState.value.filterNot { it.id == id } + newDoc
         return id
+    }
+
+    override suspend fun saveDocuments(documents: List<DocumentItem>) {
+        documents.forEach { saveDocument(it) }
     }
 
     override suspend fun setFavorite(id: Long, isFavorite: Boolean) {

@@ -13,48 +13,48 @@ val SansSerifFontFamily = FontFamily.SansSerif
 
 @Immutable
 data class CherryTypography(
-    // Monospace styles for branding, headers, chips, labels, footers
+    // Modern rounded sans-serif styles for friendly branding and clear UI hierarchy
     val appTitle: TextStyle = TextStyle(
-        fontFamily = MonospaceFontFamily,
+        fontFamily = SansSerifFontFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 24.sp,
-        letterSpacing = 2.sp,
+        fontSize = 22.sp,
+        letterSpacing = 0.5.sp,
         color = TextWhite
     ),
     val sectionHeader: TextStyle = TextStyle(
-        fontFamily = MonospaceFontFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        letterSpacing = 1.5.sp,
+        fontFamily = SansSerifFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 17.sp,
+        letterSpacing = 0.2.sp,
         color = TextWhite
     ),
     val chipText: TextStyle = TextStyle(
-        fontFamily = MonospaceFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
-        letterSpacing = 1.sp,
+        fontFamily = SansSerifFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 13.sp,
+        letterSpacing = 0.2.sp,
         color = TextWhite
     ),
     val labelMonospace: TextStyle = TextStyle(
-        fontFamily = MonospaceFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 11.sp,
-        letterSpacing = 1.2.sp,
+        fontFamily = SansSerifFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        letterSpacing = 0.3.sp,
         color = TextSoftGreyPurple
     ),
     val footerMonospace: TextStyle = TextStyle(
-        fontFamily = MonospaceFontFamily,
+        fontFamily = SansSerifFontFamily,
         fontWeight = FontWeight.Medium,
-        fontSize = 10.sp,
-        letterSpacing = 1.5.sp,
+        fontSize = 11.sp,
+        letterSpacing = 0.4.sp,
         color = TextSoftGreyPurple
     ),
     // Sans-serif styles for document text and clean UI content
     val documentTitle: TextStyle = TextStyle(
         fontFamily = SansSerifFontFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        lineHeight = 22.sp,
+        fontSize = 15.sp,
+        lineHeight = 21.sp,
         color = TextWhite
     ),
     val documentBody: TextStyle = TextStyle(
@@ -77,31 +77,31 @@ val LocalCherryTypography = staticCompositionLocalOf { CherryTypography() }
 // Material 3 Typography integration
 val MaterialTypography = Typography(
     displayLarge = TextStyle(
-        fontFamily = MonospaceFontFamily,
+        fontFamily = SansSerifFontFamily,
         fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        letterSpacing = 2.sp,
+        fontSize = 30.sp,
+        letterSpacing = 0.sp,
         color = TextWhite
     ),
     titleLarge = TextStyle(
-        fontFamily = MonospaceFontFamily,
+        fontFamily = SansSerifFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
-        letterSpacing = 1.5.sp,
+        letterSpacing = 0.15.sp,
         color = TextWhite
     ),
     titleMedium = TextStyle(
-        fontFamily = MonospaceFontFamily,
+        fontFamily = SansSerifFontFamily,
         fontWeight = FontWeight.SemiBold,
         fontSize = 16.sp,
-        letterSpacing = 1.2.sp,
+        letterSpacing = 0.15.sp,
         color = TextWhite
     ),
     bodyLarge = TextStyle(
         fontFamily = SansSerifFontFamily,
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
+        fontSize = 15.sp,
+        lineHeight = 22.sp,
         color = TextWhite
     ),
     bodyMedium = TextStyle(
@@ -112,10 +112,10 @@ val MaterialTypography = Typography(
         color = TextWhite
     ),
     labelSmall = TextStyle(
-        fontFamily = MonospaceFontFamily,
+        fontFamily = SansSerifFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
-        letterSpacing = 1.sp,
+        letterSpacing = 0.3.sp,
         color = TextSoftGreyPurple
     )
 )

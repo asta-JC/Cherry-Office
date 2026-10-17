@@ -74,6 +74,9 @@ class DocxToHtmlTest {
         assertTrue("numbered list", html.contains("<ol"))
         assertTrue("list item", html.contains("<li"))
         assertTrue("table", html.contains("<table"))
+        assertTrue("table container", html.contains("class=\"table-container\""))
+        assertTrue("cell min width", html.contains("min-width:"))
+        assertTrue("cell word break", html.contains("word-break:normal"))
         assertTrue("header shading", html.contains("#d9e2f3"))
         assertTrue("colspan", html.contains("colspan=\"2\""))
         assertTrue("rowspan", html.contains("rowspan=\"2\""))
@@ -132,6 +135,15 @@ class DocxToHtmlTest {
             "paginate hides source",
             html.contains("src.style.display='none'") || html.contains("src.style.display=\"none\"")
         )
+    }
+
+    @Test
+    fun docx_preservesTemplateAndInitialSheetContent() {
+        val stream = javaClass.getResourceAsStream("/sample.docx")
+            ?: error("test resource sample.docx missing")
+        val html = DocxToHtmlConverter.convert(stream.readBytes()).html
+        assertTrue("template holds raw blocks", html.contains("<template id=\"raw-blocks\">"))
+        assertTrue("initial content wrapped in sheet", html.contains("<div id=\"content\">\n  <div class=\"sheet\">"))
     }
 
     @Test

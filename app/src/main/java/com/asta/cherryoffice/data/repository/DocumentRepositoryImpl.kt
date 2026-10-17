@@ -52,6 +52,22 @@ class DocumentRepositoryImpl @Inject constructor(
         return documentDao.insertOrUpdateDocument(entityToSave)
     }
 
+    override suspend fun saveDocuments(documents: List<DocumentItem>) {
+        val entities = documents.map { doc ->
+            val existing = documentDao.getDocumentByUri(doc.uri)
+            if (existing != null) {
+                doc.copy(
+                    id = existing.id,
+                    isFavorite = existing.isFavorite || doc.isFavorite,
+                    lastOpened = existing.lastOpened
+                ).toEntity()
+            } else {
+                doc.toEntity()
+            }
+        }
+        documentDao.insertDocuments(entities)
+    }
+
     override suspend fun setFavorite(id: Long, isFavorite: Boolean) {
         documentDao.setFavorite(id, isFavorite)
     }

@@ -60,6 +60,9 @@ class WordJsBridge(private val onPagesReady: (Int) -> Unit) {
 fun WordViewer(
     documentUri: Uri,
     documentItem: DocumentItem?,
+    nightMode: Boolean = false,
+    onPageCountChanged: (Int) -> Unit = {},
+    onCurrentPageChanged: (Int) -> Unit = {},
     onOpenWithAnotherApp: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -98,6 +101,9 @@ fun WordViewer(
         is DocxLoadResult.Ready -> WordPages(
             html = state.html,
             baseUrl = "file://" + state.baseDir.absolutePath + "/",
+            nightMode = nightMode,
+            onPageCountChanged = onPageCountChanged,
+            onCurrentPageChanged = onCurrentPageChanged,
             modifier = modifier
         )
     }
@@ -108,6 +114,9 @@ fun WordViewer(
 private fun WordPages(
     html: String,
     baseUrl: String,
+    nightMode: Boolean,
+    onPageCountChanged: (Int) -> Unit = {},
+    onCurrentPageChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var pageCount by remember(html) { mutableIntStateOf(1) }
@@ -126,37 +135,50 @@ private fun WordPages(
         }
     }
 
+    // Dynamic dark mode class toggling in DOM
+    LaunchedEffect(nightMode) {
+        webHolder.view?.evaluateJavascript(
+            "if(document.body){if($nightMode)document.body.classList.add('dark-mode');else document.body.classList.remove('dark-mode');}",
+            null
+        )
+    }
+
+    val defaultBg = if (nightMode) android.graphics.Color.parseColor("#0E0C12") else android.graphics.Color.parseColor("#141118")
+    val backdropColor = if (nightMode) androidx.compose.ui.graphics.Color(0xFF0E0C12) else androidx.compose.ui.graphics.Color(0xFF141118)
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(backdropColor)
     ) {
-        AndroidView(
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    settings.javaScriptEnabled = true
-                    // Native pinch-to-zoom for the whole document.
-                    settings.builtInZoomControls = true
-                    settings.displayZoomControls = false
-                    settings.useWideViewPort = true
-                    settings.loadWithOverviewMode = true
-                    // Lets <img src="media/..."> resolve against baseUrl below.
-                    settings.allowFileAccess = true
-                    WebView.setWebContentsDebuggingEnabled(false)
-                    webViewClient = object : WebViewClient() {
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            super.onPageFinished(view, url)
-                            // Insurance: re-run pagination once the engine has
-                            // laid the page out (fonts/images can shift heights).
-                            try {
-                                view?.evaluateJavascript(
-                                    "window.__repaginate&&window.__repaginate()",
-                                    null
-                                )
-                            } catch (_: Exception) {
-                                // Page not ready; inline script already paginated.
+        androidx.compose.runtime.key(html) {
+            AndroidView(
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        setBackgroundColor(defaultBg)
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        // Native pinch-to-zoom for the whole document.
+                        settings.builtInZoomControls = true
+                        settings.displayZoomControls = false
+                        settings.useWideViewPort = true
+                        settings.loadWithOverviewMode = true
+                        // Lets <img src="media/..."> resolve against baseUrl below.
+                        settings.allowFileAccess = true
+                        settings.allowContentAccess = true
+                        WebView.setWebContentsDebuggingEnabled(false)
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                super.onPageFinished(view, url)
+                                try {
+                                    view?.evaluateJavascript(
+                                        "if($nightMode&&document.body)document.body.classList.add('dark-mode');window.__repaginate&&window.__repaginate();",
+                                        null
+                                    )
+                                } catch (_: Exception) {
+                                    // Page not ready; inline script already paginated.
+                                }
                             }
-                        }
 
                         override fun shouldOverrideUrlLoading(
                             view: WebView?,
@@ -182,8 +204,11 @@ private fun WordPages(
                     }
                     addJavascriptInterface(
                         WordJsBridge { count ->
-                            pageCount = count.coerceAtLeast(1)
-                            currentPage = currentPage.coerceIn(1, pageCount)
+                            val c = count.coerceAtLeast(1)
+                            pageCount = c
+                            currentPage = currentPage.coerceIn(1, c)
+                            onPageCountChanged(c)
+                            onCurrentPageChanged(currentPage)
                         },
                         "Android"
                     )
@@ -201,7 +226,9 @@ private fun WordPages(
                                 val cssY = if (scale > 0) (scrollY / scale).toInt() else scrollY
                                 v.evaluateJavascript("window.__currentPage($cssY)") { raw ->
                                     raw?.trim()?.trim('"')?.toIntOrNull()?.let { page ->
-                                        currentPage = page.coerceIn(1, pageCount.coerceAtLeast(1))
+                                        val p = page.coerceIn(1, pageCount.coerceAtLeast(1))
+                                        currentPage = p
+                                        onCurrentPageChanged(p)
                                     }
                                 }
                             } catch (_: Exception) {
@@ -214,6 +241,7 @@ private fun WordPages(
             },
             modifier = Modifier.fillMaxSize()
         )
+        }
 
         AnimatedVisibility(
             visible = userScrolling && pageCount > 1,

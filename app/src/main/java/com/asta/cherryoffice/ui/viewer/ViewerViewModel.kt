@@ -46,6 +46,7 @@ data class ViewerUiState(
     val selectedTab: Int = 0,
     val sheetNames: List<String> = listOf("Sheet 1", "Sheet 2", "Data Summary"),
     val slideTitles: List<String> = listOf("Title Slide", "Executive Summary", "Key Metrics", "Conclusion"),
+    val spreadsheetDocument: com.asta.cherryoffice.excel.SpreadsheetDocument? = null,
     val errorMessage: String? = null
 )
 
@@ -68,15 +69,17 @@ class ViewerViewModel @Inject constructor(
 
                 val docType = when {
                     ext == "pdf" || mime.contains("pdf") -> ViewerDocumentType.PDF
-                    ext in listOf("txt", "md", "log", "csv", "json", "xml") || mime.contains("text/") -> ViewerDocumentType.TEXT
+                    ext in listOf("txt", "md", "log", "json", "xml") || (mime.contains("text/") && ext != "csv") -> ViewerDocumentType.TEXT
                     ext in listOf("doc", "docx") || mime.contains("word") || mime.contains("wordprocessingml") -> ViewerDocumentType.RICH_WORD
-                    ext in listOf("xls", "xlsx") || mime.contains("excel") || mime.contains("spreadsheetml") -> ViewerDocumentType.RICH_EXCEL
+                    ext in listOf("xls", "xlsx", "csv", "tsv") || mime.contains("excel") || mime.contains("spreadsheetml") || mime.contains("text/csv") -> ViewerDocumentType.RICH_EXCEL
                     ext in listOf("ppt", "pptx") || mime.contains("powerpoint") || mime.contains("presentationml") -> ViewerDocumentType.RICH_PPT
                     else -> ViewerDocumentType.UNSUPPORTED
                 }
 
                 var content = ""
                 var paragraphs = emptyList<String>()
+                var spreadsheet: com.asta.cherryoffice.excel.SpreadsheetDocument? = null
+
                 if (docType == ViewerDocumentType.TEXT) {
                     content = withContext(Dispatchers.IO) {
                         try {
@@ -97,10 +100,19 @@ class ViewerViewModel @Inject constructor(
                         }
                     }
                 } else if (docType == ViewerDocumentType.RICH_WORD) {
-                    // Word renders itself: WordViewer parses the .docx on a
-                    // background thread, so nothing to pre-load here.
+                    // Word renders itself: WordViewer parses the .docx on a background thread
                     paragraphs = emptyList()
                     content = ""
+                } else if (docType == ViewerDocumentType.RICH_EXCEL) {
+                    spreadsheet = withContext(Dispatchers.IO) {
+                        try {
+                            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                                com.asta.cherryoffice.excel.XlsxFileReader.readSpreadsheet(inputStream, metadata.name)
+                            }
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
                 }
 
                 _uiState.update {
@@ -110,6 +122,8 @@ class ViewerViewModel @Inject constructor(
                         documentType = docType,
                         textContent = content,
                         wordParagraphs = paragraphs,
+                        spreadsheetDocument = spreadsheet,
+                        sheetNames = spreadsheet?.sheets?.map { s -> s.name } ?: it.sheetNames,
                         pageCount = if (docType == ViewerDocumentType.PDF) 5 else 4,
                         zoomScale = 1f
                     )

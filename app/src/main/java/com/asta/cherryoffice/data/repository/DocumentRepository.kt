@@ -10,6 +10,7 @@ interface DocumentRepository {
     suspend fun getDocumentById(id: Long): DocumentItem?
     suspend fun getDocumentByUri(uri: String): DocumentItem?
     suspend fun saveDocument(document: DocumentItem): Long
+    suspend fun saveDocuments(documents: List<DocumentItem>)
     suspend fun setFavorite(id: Long, isFavorite: Boolean)
     suspend fun updateLastOpened(id: Long, timestamp: Long = System.currentTimeMillis(), lastPagePosition: Int = 0)
     suspend fun deleteDocument(id: Long)

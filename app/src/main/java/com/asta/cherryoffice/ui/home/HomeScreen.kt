@@ -4,12 +4,19 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -29,58 +37,62 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Slideshow
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.asta.cherryoffice.data.model.DocumentItem
 import com.asta.cherryoffice.ui.components.CherryButton
 import com.asta.cherryoffice.ui.components.CherryButtonVariant
-import com.asta.cherryoffice.ui.components.CherryCard
 import com.asta.cherryoffice.ui.components.CherryChip
+import com.asta.cherryoffice.ui.components.CherryDocumentCard
+import com.asta.cherryoffice.ui.components.CherryFab
 import com.asta.cherryoffice.ui.components.CherryIconButton
 import com.asta.cherryoffice.ui.components.GlowBackground
+import com.asta.cherryoffice.ui.components.QuickStatsRow
 import com.asta.cherryoffice.ui.theme.CherryTheme
 import com.asta.cherryoffice.utils.DocumentCategory
-import com.asta.cherryoffice.utils.DocumentUtils
 
 @Composable
 fun HomeScreen(
@@ -90,11 +102,18 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     val openDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let { viewModel.onDocumentSelected(it) }
+    }
+
+    val openFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.scanDirectory(it) }
     }
 
     LaunchedEffect(uiState.openedDocument) {
@@ -124,11 +143,18 @@ fun HomeScreen(
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     "application/vnd.ms-powerpoint",
                     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    "text/plain"
+                    "text/plain",
+                    "text/csv"
                 )
             )
         },
+        onScanFolderClick = {
+            openFolderLauncher.launch(null)
+        },
+        onScanStorageClick = { viewModel.scanDeviceStorage() },
         onCategorySelect = { viewModel.onCategorySelected(it) },
+        onToggleFavorites = { viewModel.onToggleFavoritesOnly() },
+        onSortOrderChange = { viewModel.onSortOrderChanged(it) },
         onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
         onToggleSearch = { viewModel.toggleSearchVisibility() },
         onDocumentClick = { doc ->
@@ -137,7 +163,7 @@ fun HomeScreen(
         },
         onFavoriteToggle = { id, isFav -> viewModel.onFavoriteToggled(id, isFav) },
         onDeleteDocument = { id -> viewModel.onDeleteDocument(id) },
-        onClearHistory = { viewModel.onClearHistory() },
+        onShareDocument = { doc -> viewModel.shareDocument(doc) },
         onSettingsClick = onSettingsClick,
         snackbarHostState = snackbarHostState
     )
@@ -147,38 +173,46 @@ fun HomeScreen(
 fun HomeScreenContent(
     uiState: HomeUiState,
     onOpenFileClick: () -> Unit,
+    onScanFolderClick: () -> Unit,
+    onScanStorageClick: () -> Unit,
     onCategorySelect: (DocumentCategory) -> Unit,
+    onToggleFavorites: () -> Unit,
+    onSortOrderChange: (DocumentSortOrder) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onToggleSearch: () -> Unit,
     onDocumentClick: (DocumentItem) -> Unit,
     onFavoriteToggle: (Long, Boolean) -> Unit,
     onDeleteDocument: (Long) -> Unit,
-    onClearHistory: () -> Unit,
+    onShareDocument: (DocumentItem) -> Unit,
     onSettingsClick: () -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val colors = CherryTheme.colors
+    var showSortDialog by remember { mutableStateOf(false) }
 
     GlowBackground {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp)
+                    .statusBarsPadding()
+                    .padding(horizontal = 18.dp)
             ) {
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Top Bar
+                // Top Bar with Cherry Branding & Actions
                 HomeTopBar(
-                    totalCount = uiState.totalDocumentCount,
                     isSearchVisible = uiState.isSearchVisible,
+                    isScanning = uiState.isScanning,
                     onToggleSearch = onToggleSearch,
+                    onSortClick = { showSortDialog = true },
+                    onRefreshClick = onScanStorageClick,
                     onSettingsClick = onSettingsClick
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Search Bar input (animated visibility)
+                // Expandable Search Bar
                 AnimatedVisibility(
                     visible = uiState.isSearchVisible,
                     enter = expandVertically() + fadeIn(),
@@ -189,55 +223,78 @@ fun HomeScreenContent(
                         onQueryChange = onSearchQueryChange,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp)
+                            .padding(bottom = 12.dp)
                     )
                 }
 
-                // Big "Open file" main gradient button
-                CherryButton(
-                    text = "OPEN FILE",
-                    icon = Icons.Default.FolderOpen,
-                    variant = CherryButtonVariant.MAIN,
-                    onClick = onOpenFileClick,
+                // Quick Format Stats Dashboard Cards
+                QuickStatsRow(
+                    pdfCount = uiState.pdfCount,
+                    wordCount = uiState.wordCount,
+                    excelCount = uiState.excelCount,
+                    pptCount = uiState.pptCount,
+                    selectedCategory = if (uiState.showOnlyFavorites) DocumentCategory.OTHER else uiState.selectedCategory,
+                    onCategoryClick = onCategorySelect,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Filter Chips
-                FilterChipsRow(
+                // Category Filter Pills
+                CategoryChipsRow(
                     selectedCategory = uiState.selectedCategory,
-                    onCategorySelect = onCategorySelect
+                    showOnlyFavorites = uiState.showOnlyFavorites,
+                    favoriteCount = uiState.favoriteCount,
+                    totalCount = uiState.totalDocumentCount,
+                    onCategorySelect = onCategorySelect,
+                    onToggleFavorites = onToggleFavorites
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Recent Files Section Header
+                // Section Header with Document Count & Active Sort
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "RECENT FILES",
-                        style = CherryTheme.typography.sectionHeader
-                    )
-                    if (uiState.recentDocuments.isNotEmpty()) {
-                        IconButton(
-                            onClick = onClearHistory,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear History",
-                                tint = colors.textSoftGreyPurple,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (uiState.showOnlyFavorites) "FAVORITES" else if (uiState.selectedCategory == DocumentCategory.ALL) "ALL DOCUMENTS" else uiState.selectedCategory.displayName.uppercase(),
+                            style = CherryTheme.typography.sectionHeader,
+                            color = colors.textWhite
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "(${uiState.recentDocuments.size})",
+                            style = CherryTheme.typography.labelMonospace.copy(fontWeight = FontWeight.Bold),
+                            color = colors.primary
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showSortDialog = true }
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Sort,
+                            contentDescription = "Sort",
+                            tint = colors.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = uiState.sortOrder.displayName,
+                            style = CherryTheme.typography.labelMonospace,
+                            color = colors.textSoftGreyPurple
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Document List or Empty State
                 Box(
@@ -246,38 +303,42 @@ fun HomeScreenContent(
                         .fillMaxWidth()
                 ) {
                     if (uiState.recentDocuments.isEmpty()) {
-                        EmptyDocumentState(searchQuery = uiState.searchQuery)
+                        EmptyDocumentState(
+                            searchQuery = uiState.searchQuery,
+                            isScanning = uiState.isScanning,
+                            onScanStorage = onScanStorageClick,
+                            onOpenFile = onOpenFileClick
+                        )
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(bottom = 88.dp)
                         ) {
                             items(
                                 items = uiState.recentDocuments,
-                                key = { it.id }
+                                key = { it.uri + it.id }
                             ) { doc ->
-                                DocumentCardItem(
+                                CherryDocumentCard(
                                     document = doc,
                                     onClick = { onDocumentClick(doc) },
                                     onFavoriteToggle = { onFavoriteToggle(doc.id, !doc.isFavorite) },
-                                    onDeleteClick = { onDeleteDocument(doc.id) }
+                                    onDeleteClick = { onDeleteDocument(doc.id) },
+                                    onShareClick = { onShareDocument(doc) }
                                 )
                             }
                         }
                     }
                 }
-
-                // Footer Text
-                Text(
-                    text = "Cherry Office // Asta v1.0",
-                    style = CherryTheme.typography.footerMonospace,
-                    color = colors.textSoftGreyPurple.copy(alpha = 0.5f),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                )
             }
+
+            // Floating Cherry Action Button (FAB)
+            CherryFab(
+                onOpenFile = onOpenFileClick,
+                onScanFolder = onScanFolderClick,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 20.dp, bottom = 28.dp)
+            )
 
             SnackbarHost(
                 hostState = snackbarHostState,
@@ -287,13 +348,27 @@ fun HomeScreenContent(
             )
         }
     }
+
+    // Sort Order Selection Dialog
+    if (showSortDialog) {
+        SortOrderDialog(
+            currentOrder = uiState.sortOrder,
+            onOrderSelected = {
+                onSortOrderChange(it)
+                showSortDialog = false
+            },
+            onDismiss = { showSortDialog = false }
+        )
+    }
 }
 
 @Composable
 fun HomeTopBar(
-    totalCount: Int,
     isSearchVisible: Boolean,
+    isScanning: Boolean,
     onToggleSearch: () -> Unit,
+    onSortClick: () -> Unit,
+    onRefreshClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
     val colors = CherryTheme.colors
@@ -303,11 +378,11 @@ fun HomeTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        // App Identity with Cherry Badge
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Rounded app icon tile in cherry gradient
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(
                         Brush.horizontalGradient(
@@ -316,15 +391,13 @@ fun HomeTopBar(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Description,
-                    contentDescription = "Cherry Office Icon",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                Text(
+                    text = "🍒",
+                    fontSize = 22.sp
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Column {
                 Text(
@@ -332,12 +405,13 @@ fun HomeTopBar(
                     style = CherryTheme.typography.appTitle
                 )
                 Text(
-                    text = "Asta's project",
+                    text = "All-Document Opener",
                     style = CherryTheme.typography.labelMonospace
                 )
             }
         }
 
+        // Top Action Icons
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -347,39 +421,41 @@ fun HomeTopBar(
                 contentDescription = "Search",
                 onClick = onToggleSearch,
                 containerColor = if (isSearchVisible) colors.deepCherry.copy(alpha = 0.5f) else colors.card,
-                borderColor = if (isSearchVisible) colors.primary else colors.borderTranslucent
+                borderColor = if (isSearchVisible) colors.primary else colors.borderTranslucent,
+                size = 38.dp,
+                iconSize = 19.dp
+            )
+
+            val rotation = if (isScanning) {
+                val infiniteTransition = rememberInfiniteTransition(label = "scan_rotation")
+                val angle by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "scan_spin"
+                )
+                angle
+            } else 0f
+
+            CherryIconButton(
+                icon = Icons.Default.Sync,
+                contentDescription = "Scan Storage",
+                onClick = onRefreshClick,
+                size = 38.dp,
+                iconSize = 19.dp,
+                modifier = Modifier.rotate(rotation)
             )
 
             CherryIconButton(
                 icon = Icons.Default.Settings,
                 contentDescription = "Settings",
-                onClick = onSettingsClick
+                onClick = onSettingsClick,
+                size = 38.dp,
+                iconSize = 19.dp
             )
-
-            BadgedBox(
-                badge = {
-                    if (totalCount > 0) {
-                        Badge(
-                            containerColor = colors.primary,
-                            contentColor = Color.White
-                        ) {
-                            Text(
-                                text = if (totalCount > 99) "99+" else totalCount.toString(),
-                                style = CherryTheme.typography.labelMonospace.copy(
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                    }
-                }
-            ) {
-                CherryIconButton(
-                    icon = Icons.Default.History,
-                    contentDescription = "Recent Files Count",
-                    onClick = {}
-                )
-            }
         }
     }
 }
@@ -394,10 +470,10 @@ fun SearchBarInput(
 
     Box(
         modifier = modifier
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(20.dp))
             .background(colors.card)
-            .border(1.dp, colors.borderTranslucent, CircleShape)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .border(1.dp, colors.primary.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 14.dp, vertical = 9.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -407,13 +483,13 @@ fun SearchBarInput(
                 imageVector = Icons.Default.Search,
                 contentDescription = null,
                 tint = colors.primary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(19.dp)
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Box(modifier = Modifier.weight(1f)) {
                 if (query.isEmpty()) {
                     Text(
-                        text = "Search documents...",
+                        text = "Search all documents (PDF, DOCX, XLSX...)",
                         style = CherryTheme.typography.documentMeta,
                         color = colors.textSoftGreyPurple
                     )
@@ -430,7 +506,7 @@ fun SearchBarInput(
             if (query.isNotEmpty()) {
                 IconButton(
                     onClick = { onQueryChange("") },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -445,160 +521,63 @@ fun SearchBarInput(
 }
 
 @Composable
-fun FilterChipsRow(
+fun CategoryChipsRow(
     selectedCategory: DocumentCategory,
-    onCategorySelect: (DocumentCategory) -> Unit
+    showOnlyFavorites: Boolean,
+    favoriteCount: Int,
+    totalCount: Int,
+    onCategorySelect: (DocumentCategory) -> Unit,
+    onToggleFavorites: () -> Unit
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(DocumentCategory.entries.toTypedArray()) { category ->
+        // "All" chip
+        item {
+            CherryChip(
+                text = "All",
+                isSelected = (!showOnlyFavorites && selectedCategory == DocumentCategory.ALL),
+                count = totalCount,
+                onClick = { onCategorySelect(DocumentCategory.ALL) }
+            )
+        }
+
+        // Format chips
+        items(
+            listOf(
+                DocumentCategory.PDF,
+                DocumentCategory.WORD,
+                DocumentCategory.EXCEL,
+                DocumentCategory.POWERPOINT
+            )
+        ) { category ->
             CherryChip(
                 text = category.displayName,
-                isSelected = (selectedCategory == category),
+                isSelected = (!showOnlyFavorites && selectedCategory == category),
                 onClick = { onCategorySelect(category) }
+            )
+        }
+
+        // Favorites chip
+        item {
+            CherryChip(
+                text = "Starred",
+                icon = Icons.Default.Star,
+                isSelected = showOnlyFavorites,
+                count = favoriteCount,
+                onClick = onToggleFavorites
             )
         }
     }
 }
 
 @Composable
-fun DocumentCardItem(
-    document: DocumentItem,
-    onClick: () -> Unit,
-    onFavoriteToggle: () -> Unit,
-    onDeleteClick: () -> Unit
+fun EmptyDocumentState(
+    searchQuery: String,
+    isScanning: Boolean,
+    onScanStorage: () -> Unit,
+    onOpenFile: () -> Unit
 ) {
-    val colors = CherryTheme.colors
-    val category = DocumentUtils.getCategoryForDocument(document.mimeType, document.extension)
-    val (icon, iconBgColor, iconTint) = getCategoryVisuals(category)
-
-    CherryCard(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        contentPadding = 12.dp
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // Category Icon Tile
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(iconBgColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = category.displayName,
-                    tint = iconTint,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // Document Metadata
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = document.name,
-                    style = CherryTheme.typography.documentTitle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = DocumentUtils.formatFileSize(document.size),
-                        style = CherryTheme.typography.documentMeta
-                    )
-                    Text(
-                        text = " • ",
-                        style = CherryTheme.typography.documentMeta
-                    )
-                    Text(
-                        text = DocumentUtils.formatLastOpened(document.lastOpened),
-                        style = CherryTheme.typography.documentMeta
-                    )
-                }
-            }
-
-            // Favorite Star & Delete Actions
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                IconButton(
-                    onClick = onFavoriteToggle,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = if (document.isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
-                        contentDescription = "Favorite",
-                        tint = if (document.isFavorite) Color(0xFFFFC107) else colors.textSoftGreyPurple,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                IconButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Delete",
-                        tint = colors.textSoftGreyPurple,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-private data class CategoryVisuals(
-    val icon: ImageVector,
-    val containerColor: Color,
-    val iconTint: Color
-)
-
-@Composable
-private fun getCategoryVisuals(category: DocumentCategory): CategoryVisuals {
-    val primary = CherryTheme.colors.primary
-
-    return when (category) {
-        DocumentCategory.PDF -> CategoryVisuals(
-            icon = Icons.Default.PictureAsPdf,
-            containerColor = Color(0x33FF2D55),
-            iconTint = primary
-        )
-        DocumentCategory.WORD -> CategoryVisuals(
-            icon = Icons.AutoMirrored.Filled.Article,
-            containerColor = Color(0x332196F3),
-            iconTint = Color(0xFF42A5F5)
-        )
-        DocumentCategory.EXCEL -> CategoryVisuals(
-            icon = Icons.Default.GridOn,
-            containerColor = Color(0x334CAF50),
-            iconTint = Color(0xFF66BB6A)
-        )
-        DocumentCategory.POWERPOINT -> CategoryVisuals(
-            icon = Icons.Default.Slideshow,
-            containerColor = Color(0x33FF9800),
-            iconTint = Color(0xFFFFA726)
-        )
-        else -> CategoryVisuals(
-            icon = Icons.AutoMirrored.Filled.InsertDriveFile,
-            containerColor = Color(0x339C27B0),
-            iconTint = Color(0xFFAB47BC)
-        )
-    }
-}
-
-@Composable
-fun EmptyDocumentState(searchQuery: String) {
     val colors = CherryTheme.colors
 
     Column(
@@ -610,24 +589,30 @@ fun EmptyDocumentState(searchQuery: String) {
     ) {
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(76.dp)
                 .clip(CircleShape)
-                .background(colors.deepCherry.copy(alpha = 0.3f))
-                .border(1.dp, colors.borderTranslucent, CircleShape),
+                .background(colors.deepCherry.copy(alpha = 0.35f))
+                .border(1.5.dp, colors.primary.copy(alpha = 0.6f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = if (searchQuery.isNotBlank()) Icons.Default.FolderOff else Icons.Default.FolderOpen,
-                contentDescription = null,
-                tint = colors.primary,
-                modifier = Modifier.size(36.dp)
-            )
+            if (isScanning) {
+                CircularProgressIndicator(
+                    color = colors.primary,
+                    modifier = Modifier.size(36.dp),
+                    strokeWidth = 3.dp
+                )
+            } else {
+                Text(
+                    text = "🍒",
+                    fontSize = 36.sp
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "NO RECENT DOCUMENTS",
+            text = if (isScanning) "SCANNING STORAGE…" else if (searchQuery.isNotBlank()) "NO MATCHING DOCUMENTS" else "NO DOCUMENTS FOUND",
             style = CherryTheme.typography.sectionHeader,
             color = colors.textWhite
         )
@@ -635,16 +620,100 @@ fun EmptyDocumentState(searchQuery: String) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = if (searchQuery.isNotBlank()) {
+            text = if (isScanning) {
+                "Indexing PDF, Word, Excel, and presentations from your device storage..."
+            } else if (searchQuery.isNotBlank()) {
                 "No documents matching \"$searchQuery\"."
             } else {
-                "Tap 'OPEN FILE' to pick a document from your storage."
+                "Scan your phone storage to list all documents automatically, or pick a file to view."
             },
             style = CherryTheme.typography.documentMeta,
             textAlign = TextAlign.Center,
             color = colors.textSoftGreyPurple
         )
+
+        if (!isScanning && searchQuery.isBlank()) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CherryButton(
+                    text = "SCAN STORAGE",
+                    icon = Icons.Default.Sync,
+                    variant = CherryButtonVariant.MAIN,
+                    onClick = onScanStorage,
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
+                )
+
+                CherryButton(
+                    text = "BROWSE FILE",
+                    icon = Icons.Default.FolderOpen,
+                    variant = CherryButtonVariant.ACTION,
+                    onClick = onOpenFile,
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
+                )
+            }
+        }
     }
+}
+
+@Composable
+fun SortOrderDialog(
+    currentOrder: DocumentSortOrder,
+    onOrderSelected: (DocumentSortOrder) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val colors = CherryTheme.colors
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.surface,
+        shape = RoundedCornerShape(20.dp),
+        title = {
+            Text(
+                text = "Sort Documents",
+                style = CherryTheme.typography.sectionHeader
+            )
+        },
+        text = {
+            Column {
+                DocumentSortOrder.entries.forEach { order ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { onOrderSelected(order) }
+                            .padding(vertical = 8.dp, horizontal = 4.dp)
+                    ) {
+                        RadioButton(
+                            selected = (currentOrder == order),
+                            onClick = { onOrderSelected(order) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = colors.primary,
+                                unselectedColor = colors.textSoftGreyPurple
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = order.displayName,
+                            style = CherryTheme.typography.documentBody,
+                            color = if (currentOrder == order) colors.primary else colors.textWhite
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Cancel",
+                    color = colors.textSoftGreyPurple
+                )
+            }
+        }
+    )
 }
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -678,39 +747,22 @@ fun HomeScreenPreview() {
             uiState = HomeUiState(
                 recentDocuments = sampleDocs,
                 totalDocumentCount = 2,
+                pdfCount = 1,
+                excelCount = 1,
                 selectedCategory = DocumentCategory.ALL
             ),
             onOpenFileClick = {},
+            onScanFolderClick = {},
+            onScanStorageClick = {},
             onCategorySelect = {},
+            onToggleFavorites = {},
+            onSortOrderChange = {},
             onSearchQueryChange = {},
             onToggleSearch = {},
             onDocumentClick = {},
             onFavoriteToggle = { _, _ -> },
             onDeleteDocument = {},
-            onClearHistory = {},
-            onSettingsClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun HomeScreenEmptyPreview() {
-    CherryTheme {
-        HomeScreenContent(
-            uiState = HomeUiState(
-                recentDocuments = emptyList(),
-                totalDocumentCount = 0,
-                selectedCategory = DocumentCategory.ALL
-            ),
-            onOpenFileClick = {},
-            onCategorySelect = {},
-            onSearchQueryChange = {},
-            onToggleSearch = {},
-            onDocumentClick = {},
-            onFavoriteToggle = { _, _ -> },
-            onDeleteDocument = {},
-            onClearHistory = {},
+            onShareDocument = {},
             onSettingsClick = {}
         )
     }
