@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="app/src/main/res/drawable/icon.png" width="96" alt="Cherry Office app icon" />
+  <img src="office.svg" width="96" alt="Cherry Office app icon" />
   <h1>Cherry Office</h1>
   <p><strong>A little cherry. More room for your documents.</strong></p>
   <p>An offline document reader for Android.<br />PDFs, documents, spreadsheets, and slides — together in one quiet space.</p>
@@ -7,6 +7,10 @@
     <img src="https://img.shields.io/badge/version-1.1.0-A82D4B?style=flat-square" alt="Version 1.1.0" />
     <img src="https://img.shields.io/badge/Android-7.0%2B-3D6B50?style=flat-square" alt="Android 7.0 and newer" />
     <img src="https://img.shields.io/badge/built_with-Kotlin_%26_Compose-715A64?style=flat-square" alt="Built with Kotlin and Jetpack Compose" />
+  </p>
+  <p>
+    <a href="https://github.com/asta-JC/Cherry-Office/releases/download/v1.1.0/Cherry-Office_v1.1.0.apk"><strong>Download APK · v1.1.0</strong></a> ·
+    <a href="https://github.com/asta-JC/Cherry-Office/releases/tag/v1.1.0">Release notes</a>
   </p>
   <p>
     <a href="#screenshots">Screenshots</a> ·
@@ -68,6 +72,12 @@ Captured on a physical Samsung Galaxy S22 Ultra using the app's production scree
 **Preview limits:** Office layouts can differ from the authoring app. PowerPoint animations are static; some diagrams, custom shapes, and advanced chart styling need another office app. Spreadsheet previews show up to 10,000 populated rows and 256 columns per sheet, use saved formula results, and do not recalculate formulas. Scanned PDFs need OCR for text selection; OCR is not included. Older `.doc` / `.ppt` and OpenDocument files use an external-app handoff.
 
 ## Getting started
+
+### Download
+
+Install [Cherry-Office_v1.1.0.apk](https://github.com/asta-JC/Cherry-Office/releases/download/v1.1.0/Cherry-Office_v1.1.0.apk) from [GitHub Releases](https://github.com/asta-JC/Cherry-Office/releases/tag/v1.1.0). The release includes a SHA-256 checksum file.
+
+This APK is the debug/test-signed build verified on a physical device. It uses the current development certificate, rather than a separate production signing key.
 
 ### Requirements
 
@@ -143,6 +153,6 @@ Cherry Office is part of Asta's project series. The existing project notice perm
 ---
 
 <p align="center">
-  <strong>Made with care &amp; 🍒 by Asta</strong><br />
+  <strong>Made with ❤️ &amp; 🍒 by Asta</strong><br />
   <sub>Part of the CherryApp family.</sub>
 </p>
