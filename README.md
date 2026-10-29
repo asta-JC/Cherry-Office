@@ -4,13 +4,13 @@
   <p><strong>A little cherry. More room for your documents.</strong></p>
   <p>An offline document reader for Android.<br />PDFs, documents, spreadsheets, and slides — together in one quiet space.</p>
   <p>
-    <img src="https://img.shields.io/badge/version-1.1.0-A82D4B?style=flat-square" alt="Version 1.1.0" />
+    <img src="https://img.shields.io/badge/version-1.2-A82D4B?style=flat-square" alt="Version 1.2" />
     <img src="https://img.shields.io/badge/Android-7.0%2B-3D6B50?style=flat-square" alt="Android 7.0 and newer" />
     <img src="https://img.shields.io/badge/built_with-Kotlin_%26_Compose-715A64?style=flat-square" alt="Built with Kotlin and Jetpack Compose" />
   </p>
   <p>
-    <a href="https://github.com/asta-JC/Cherry-Office/releases/download/v1.1.0/Cherry-Office_v1.1.0.apk"><strong>Download APK · v1.1.0</strong></a> ·
-    <a href="https://github.com/asta-JC/Cherry-Office/releases/tag/v1.1.0">Release notes</a>
+    <a href="https://github.com/asta-JC/Cherry-Office/releases/download/v1.2/Cherry-Office_v1.2.apk"><strong>Download APK · v1.2</strong></a> ·
+    <a href="https://github.com/asta-JC/Cherry-Office/releases/tag/v1.2">Release notes</a>
   </p>
   <p>
     <a href="#screenshots">Screenshots</a> ·
@@ -75,7 +75,7 @@ Captured on a physical Samsung Galaxy S22 Ultra using the app's production scree
 
 ### Download
 
-Install [Cherry-Office_v1.1.0.apk](https://github.com/asta-JC/Cherry-Office/releases/download/v1.1.0/Cherry-Office_v1.1.0.apk) from [GitHub Releases](https://github.com/asta-JC/Cherry-Office/releases/tag/v1.1.0). The release includes a SHA-256 checksum file.
+Install [Cherry-Office_v1.2.apk](https://github.com/asta-JC/Cherry-Office/releases/download/v1.2/Cherry-Office_v1.2.apk) from [GitHub Releases](https://github.com/asta-JC/Cherry-Office/releases/tag/v1.2). The release includes a SHA-256 checksum file.
 
 This APK is the debug/test-signed build verified on a physical device. It uses the current development certificate, rather than a separate production signing key.
 
@@ -135,12 +135,13 @@ app/src/main/java/com/asta/cherryoffice/
 
 </details>
 
-## What's new in 1.1.0
+## What's new in 1.2
 
-- Visual PowerPoint slides with vertical scrolling and pinch zoom.
-- Text fitting that keeps final lines and descenders visible.
-- Improved PDF selection, spreadsheet compatibility, and appearance settings.
-- Subtle cherry details, with the original app icon preserved.
+- A short, silent CherryApp Family launch animation with a Skip button.
+- Original 720p video frames at normal speed, displayed without zooming or cropping.
+- Direct document opening and warm returns skip the intro.
+- Automatic playback cleanup keeps the decoder from running after launch.
+
 
 ## Feedback
 
