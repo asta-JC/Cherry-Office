@@ -1,324 +1,150 @@
 package com.asta.cherryoffice.ui.viewer
 
 import android.net.Uri
-import androidx.compose.animation.*
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.SubcomposeAsyncImage
+import com.asta.cherryoffice.ui.components.ZoomableBox
+import com.asta.cherryoffice.utils.DocumentUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ViewerScreen(
-    viewModel: ViewerViewModel,
-    documentUri: Uri,
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun ViewerScreen(viewModel: ViewerViewModel, documentUri: Uri, onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val darkSurroundings = MaterialTheme.colorScheme.background.luminance() < .5f
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showControls by rememberSaveable(documentUri.toString()) { mutableStateOf(true) }
+    var more by remember { mutableStateOf(false) }
+    var showPageDialog by remember { mutableStateOf(false) }
+    var pageInput by remember { mutableStateOf("") }
+    var requestedPage by remember(documentUri) { mutableStateOf<Int?>(null) }
+    var pageRequestId by remember(documentUri) { mutableIntStateOf(0) }
+    val snackbar = remember { SnackbarHostState() }
+    val ownsDocument = state.sourceUri == documentUri.toString()
+    fun stillOwnsDocument() = viewModel.uiState.value.sourceUri == documentUri.toString()
+    val canSearch = ownsDocument && state.documentType in listOf(ViewerDocumentType.TEXT, ViewerDocumentType.RICH_EXCEL, ViewerDocumentType.RICH_WORD)
+    val paged = ownsDocument && state.documentType in listOf(ViewerDocumentType.PDF, ViewerDocumentType.RICH_WORD)
+    fun goTo(page: Int) { requestedPage = page.coerceIn(0, state.pageCount - 1); pageRequestId++ }
 
-    var showControls by remember { mutableStateOf(true) }
-    var showMoreMenu by remember { mutableStateOf(false) }
-
-    LaunchedEffect(documentUri) {
-        viewModel.loadDocument(documentUri)
+    LaunchedEffect(documentUri) { viewModel.loadDocument(documentUri) }
+    LaunchedEffect(state.notice) {
+        state.notice?.let { snackbar.showSnackbar(it); viewModel.clearActionMessage() }
     }
-
-    val bottomSpacing by animateDpAsState(
-        targetValue = if (showControls) 80.dp else 16.dp,
-        label = "viewer_bottom_spacing"
-    )
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            AnimatedVisibility(
-                visible = showControls,
-                enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
-                exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
-            ) {
-                Column {
-                    TopAppBar(
-                        title = {
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = state.documentItem?.name ?: "Document Viewer",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f, fill = false)
-                                    )
-                                    if (state.pageCount > 1) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                            contentColor = MaterialTheme.colorScheme.primary
-                                        ) {
-                                            Text(
-                                                text = "${state.currentPage + 1}/${state.pageCount}",
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                                Text(
-                                    text = "${state.documentItem?.extension?.uppercase() ?: ""} • ${state.documentItem?.size?.let { com.asta.cherryoffice.utils.DocumentUtils.formatFileSize(it) } ?: ""}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = onBackClick) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                    contentDescription = "Back"
-                                )
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = { viewModel.shareDocument(context, documentUri.toString()) }) {
-                                Icon(imageVector = Icons.Rounded.Share, contentDescription = "Share Document")
-                            }
-                            Box {
-                                IconButton(onClick = { showMoreMenu = true }) {
-                                    Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = "More Options")
-                                }
-                                DropdownMenu(
-                                    expanded = showMoreMenu,
-                                    onDismissRequest = { showMoreMenu = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Open with another app") },
-                                        onClick = {
-                                            showMoreMenu = false
-                                            viewModel.openWithAnotherApp(context, documentUri.toString())
-                                        },
-                                        leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = null) }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(if (state.nightMode) "Disable Night Mode" else "Enable Night Mode") },
-                                        onClick = {
-                                            showMoreMenu = false
-                                            viewModel.toggleNightMode()
-                                        },
-                                        leadingIcon = { Icon(if (state.nightMode) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, contentDescription = null) }
-                                    )
-                                }
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                        thickness = 0.5.dp
-                    )
-                }
+            if (showControls) Column {
+                TopAppBar(
+                    title = { Column {
+                        Text(if (ownsDocument) state.documentItem?.name ?: "Opening document…" else "Opening document…", maxLines = 1,
+                            overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium)
+                        state.documentItem?.takeIf { ownsDocument }?.let { item -> Text(
+                            "${item.extension.uppercase()}  •  ${DocumentUtils.formatFileSize(item.size)}",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    } },
+                    navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                    actions = {
+                        if (canSearch && !state.isLoading) IconButton(onClick = viewModel::toggleSearch) { Icon(Icons.Rounded.Search, "Find in document") }
+                        IconButton(onClick = { more = true }) { Icon(Icons.Rounded.MoreVert, "Document options") }
+                        DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
+                            DropdownMenuItem(text = { Text("Share") }, leadingIcon = { Icon(Icons.Rounded.Share, null) },
+                                onClick = { more = false; viewModel.shareDocument(context, documentUri.toString()) })
+                            DropdownMenuItem(text = { Text("Open with another app") }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.OpenInNew, null) },
+                                onClick = { more = false; viewModel.openWithAnotherApp(context, documentUri.toString()) })
+                        }
+                    })
+                if (state.isSearchActive && canSearch) OutlinedTextField(
+                    value = state.searchQuery, onValueChange = viewModel::setSearchQuery,
+                    placeholder = { Text("Find in document") }, singleLine = true,
+                    leadingIcon = { Icon(Icons.Rounded.Search, null) },
+                    trailingIcon = { IconButton(onClick = viewModel::toggleSearch) { Icon(Icons.Rounded.Close, "Close search") } },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp))
+                HorizontalDivider()
             }
         },
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets.statusBars
-    ) { innerPadding ->
-        // 2. Document Page View: Takes full remaining space strictly BELOW the TopAppBar
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // Document Page Content with top breathing space
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 4.dp, bottom = bottomSpacing)
-            ) {
-                when (state.documentType) {
-                    ViewerDocumentType.PDF -> {
-                        PdfViewer(
-                            uriString = documentUri.toString(),
-                            zoomScale = state.zoomScale,
-                            nightMode = state.nightMode,
-                            onPageCountChanged = { count -> viewModel.updatePageCount(count) },
-                            onZoomChanged = { scale -> viewModel.setZoom(scale) },
-                            modifier = Modifier.fillMaxSize()
-                        )
+        bottomBar = {
+            if (showControls && ownsDocument && !state.isLoading && state.documentType != ViewerDocumentType.UNSUPPORTED) Surface(tonalElevation = 3.dp) {
+                Row(Modifier.fillMaxWidth().navigationBarsPadding().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    if (paged) {
+                        IconButton(enabled = state.currentPage > 0, onClick = { goTo(state.currentPage - 1) }) { Icon(Icons.Rounded.ChevronLeft, "Previous page") }
+                        TextButton(onClick = { pageInput = (state.currentPage + 1).toString(); showPageDialog = true }) { Text("${state.currentPage + 1} / ${state.pageCount}") }
+                        IconButton(enabled = state.currentPage < state.pageCount - 1, onClick = { goTo(state.currentPage + 1) }) { Icon(Icons.Rounded.ChevronRight, "Next page") }
                     }
-                    ViewerDocumentType.TEXT -> {
-                        TextViewer(
-                            textContent = state.textContent,
-                            fontSize = state.fontSize,
-                            nightMode = state.nightMode,
-                            searchQuery = state.searchQuery,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    ViewerDocumentType.RICH_WORD -> {
-                        WordViewer(
-                            documentUri = documentUri,
-                            documentItem = state.documentItem,
-                            nightMode = state.nightMode,
-                            onPageCountChanged = { count -> viewModel.updatePageCount(count) },
-                            onCurrentPageChanged = { page -> viewModel.setPage(page - 1) },
-                            onOpenWithAnotherApp = { viewModel.openWithAnotherApp(context, documentUri.toString()) },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    ViewerDocumentType.RICH_EXCEL -> {
-                        ExcelViewer(
-                            document = state.spreadsheetDocument,
-                            nightMode = state.nightMode,
-                            searchQuery = state.searchQuery,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    ViewerDocumentType.RICH_PPT -> {
-                        RichDocumentViewer(
-                            documentItem = state.documentItem,
-                            documentType = state.documentType,
-                            selectedTab = state.selectedTab,
-                            sheetNames = state.sheetNames,
-                            slideTitles = state.slideTitles,
-                            textContent = state.textContent,
-                            wordParagraphs = state.wordParagraphs,
-                            nightMode = state.nightMode,
-                            onTabSelected = { tab -> viewModel.setSelectedTab(tab) },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    ViewerDocumentType.UNSUPPORTED -> {
-                        ErrorScreen(
-                            documentItem = state.documentItem,
-                            errorMessage = state.errorMessage,
-                            onOpenWithAnotherApp = { viewModel.openWithAnotherApp(context, documentUri.toString()) }
-                        )
-                    }
-                }
-            }
-
-            // Floating pill to restore controls when hidden
-            AnimatedVisibility(
-                visible = !showControls,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 10.dp, end = 14.dp)
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.90f),
-                    shadowElevation = 6.dp,
-                    onClick = { showControls = true }
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Visibility,
-                        contentDescription = "Show Controls",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .size(20.dp)
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = showControls,
-                enter = fadeIn() + slideInVertically { it },
-                exit = fadeOut() + slideOutVertically { it },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp)
-            ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 6.dp,
-                shadowElevation = 8.dp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
                     if (state.documentType == ViewerDocumentType.PDF) {
-                        IconButton(onClick = { viewModel.setZoom(state.zoomScale - 0.25f) }) {
-                            Icon(Icons.Rounded.ZoomOut, contentDescription = "Zoom Out")
-                        }
-                        Text(
-                            text = "${(state.zoomScale * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        IconButton(onClick = { viewModel.setZoom(state.zoomScale + 0.25f) }) {
-                            Icon(Icons.Rounded.ZoomIn, contentDescription = "Zoom In")
-                        }
-                    } else if (state.documentType == ViewerDocumentType.TEXT) {
-                        IconButton(onClick = { viewModel.setFontSize(state.fontSize - 2f) }) {
-                            Icon(Icons.Rounded.Remove, contentDescription = "Decrease Font Size")
-                        }
-                        Text(
-                            text = "${state.fontSize.toInt()} sp",
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                        IconButton(onClick = { viewModel.setFontSize(state.fontSize + 2f) }) {
-                            Icon(Icons.Rounded.Add, contentDescription = "Increase Font Size")
-                        }
-
-                        VerticalDivider(modifier = Modifier.height(24.dp))
-
-                        IconButton(onClick = { viewModel.toggleSearch() }) {
-                            Icon(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = "Search",
-                                tint = if (state.isSearchActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    } else {
-                        Text(
-                            text = "Formatted ${state.documentItem?.extension?.uppercase() ?: "Rich"} View",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        IconButton(enabled = state.zoomScale > 1f, onClick = { viewModel.setZoom(state.zoomScale - .25f) }) { Icon(Icons.Rounded.ZoomOut, "Zoom out") }
+                        TextButton(onClick = { viewModel.setZoom(1f) }) { Text("${(state.zoomScale * 100).toInt()}%") }
+                        IconButton(enabled = state.zoomScale < 5f, onClick = { viewModel.setZoom(state.zoomScale + .25f) }) { Icon(Icons.Rounded.ZoomIn, "Zoom in") }
                     }
-
-                    VerticalDivider(modifier = Modifier.height(24.dp))
-
-                    IconButton(onClick = { viewModel.toggleNightMode() }) {
-                        Icon(
-                            imageVector = if (state.nightMode) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                            contentDescription = "Night Mode Toggle",
-                            tint = if (state.nightMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                        )
+                    if (state.documentType == ViewerDocumentType.TEXT) {
+                        IconButton(onClick = { viewModel.setFontSize(state.fontSize - 2) }) { Icon(Icons.Rounded.Remove, "Smaller text") }
+                        Text("${state.fontSize.toInt()} sp", style = MaterialTheme.typography.labelLarge)
+                        IconButton(onClick = { viewModel.setFontSize(state.fontSize + 2) }) { Icon(Icons.Rounded.Add, "Larger text") }
                     }
-
-                    IconButton(onClick = { showControls = !showControls }) {
-                        Icon(
-                            imageVector = Icons.Rounded.VisibilityOff,
-                            contentDescription = "Hide Controls"
-                        )
-                    }
+                    IconButton(onClick = { showControls = false }) { Icon(Icons.Rounded.VisibilityOff, "Read full screen") }
                 }
             }
         }
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            // A new URI must never reuse a previous viewer's local selection or rendering state.
+            key(documentUri) {
+                if (state.isLoading || !ownsDocument) Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(16.dp))
+                    Text("Opening document…")
+                } else when (state.documentType) {
+                    ViewerDocumentType.PDF -> PdfViewer(
+                        uriString = documentUri.toString(), zoomScale = state.zoomScale, nightMode = darkSurroundings,
+                        onPageCountChanged = { if (stillOwnsDocument()) viewModel.updatePageCount(it) }, onZoomChanged = { if (stillOwnsDocument()) viewModel.setZoom(it) },
+                        onCurrentPageChanged = { if (stillOwnsDocument()) viewModel.setPage(it) }, requestedPage = requestedPage, pageRequestId = pageRequestId, initialPage = state.currentPage,
+                        onOpenWithAnotherApp = { viewModel.openWithAnotherApp(context, documentUri.toString()) })
+                    ViewerDocumentType.RICH_WORD -> WordViewer(
+                        documentUri = documentUri, documentItem = state.documentItem, nightMode = darkSurroundings,
+                        searchQuery = state.searchQuery, requestedPage = requestedPage, pageRequestId = pageRequestId,
+                        onPageCountChanged = { if (stillOwnsDocument()) viewModel.updatePageCount(it) }, onCurrentPageChanged = { if (stillOwnsDocument()) viewModel.setPage(it - 1) },
+                        onOpenWithAnotherApp = { viewModel.openWithAnotherApp(context, documentUri.toString()) })
+                    ViewerDocumentType.RICH_EXCEL -> ExcelViewer(state.spreadsheetDocument, darkSurroundings, state.searchQuery)
+                    ViewerDocumentType.RICH_PPT -> PresentationViewer(state.slides, false)
+                    ViewerDocumentType.TEXT -> TextViewer(state.textContent, state.fontSize, darkSurroundings, state.searchQuery)
+                    ViewerDocumentType.IMAGE -> ZoomableBox(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer)) {
+                        SubcomposeAsyncImage(model = documentUri, contentDescription = state.documentItem?.name,
+                            modifier = Modifier.fillMaxSize(), loading = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } },
+                            error = { ErrorScreen(state.documentItem, "This image could not be decoded on this device.", { viewModel.openWithAnotherApp(context, documentUri.toString()) }) })
+                    }
+                    ViewerDocumentType.UNSUPPORTED -> ErrorScreen(state.documentItem, state.errorMessage,
+                        { viewModel.openWithAnotherApp(context, documentUri.toString()) })
+                }
+            }
+            if (!showControls) FilledTonalIconButton(onClick = { showControls = true }, modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(12.dp)) {
+                Icon(Icons.Rounded.Visibility, "Show reading controls")
+            }
+        }
     }
-}
+    if (showPageDialog) AlertDialog(
+        onDismissRequest = { showPageDialog = false }, title = { Text("Go to page") },
+        text = { OutlinedTextField(pageInput, { pageInput = it.filter(Char::isDigit).take(7) },
+            label = { Text("Page 1–${state.pageCount}") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)) },
+        confirmButton = { TextButton(enabled = pageInput.toIntOrNull() in 1..state.pageCount,
+            onClick = { goTo(pageInput.toInt() - 1); showPageDialog = false }) { Text("Go") } },
+        dismissButton = { TextButton(onClick = { showPageDialog = false }) { Text("Cancel") } })
 }

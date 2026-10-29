@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.CherryOffice" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Base.Theme.CherryOffice" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#151318</item>
+        <item name="android:colorBackground">#151318</item>
+        <item name="android:colorAccent">#BE3655</item>
+        <item name="android:statusBarColor">#151318</item>
+        <item name="android:navigationBarColor">#151318</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+    <style name="Theme.CherryOffice" parent="Base.Theme.CherryOffice" />
 </resources>

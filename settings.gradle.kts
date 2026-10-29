@@ -24,3 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Cherry Office"
 include(":app")
+
+include(":office-compat")

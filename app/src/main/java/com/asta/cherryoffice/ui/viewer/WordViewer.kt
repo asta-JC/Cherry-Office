@@ -35,11 +35,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.asta.cherryoffice.data.model.DocumentItem
@@ -49,10 +51,10 @@ import kotlinx.coroutines.delay
 
 // Bridge so the page's JavaScript can tell us how many sheets it built.
 // (R8 rule in app/src/main/keepRules/rules.keep keeps this method.)
-class WordJsBridge(private val onPagesReady: (Int) -> Unit) {
+class WordJsBridge(private val pagesReady: (Int) -> Unit) {
     @JavascriptInterface
     fun onPagesReady(count: Int) {
-        onPagesReady(count)
+        pagesReady.invoke(count)
     }
 }
 
@@ -61,6 +63,9 @@ fun WordViewer(
     documentUri: Uri,
     documentItem: DocumentItem?,
     nightMode: Boolean = false,
+    searchQuery: String = "",
+    requestedPage: Int? = null,
+    pageRequestId: Int = 0,
     onPageCountChanged: (Int) -> Unit = {},
     onCurrentPageChanged: (Int) -> Unit = {},
     onOpenWithAnotherApp: () -> Unit,
@@ -102,6 +107,9 @@ fun WordViewer(
             html = state.html,
             baseUrl = "file://" + state.baseDir.absolutePath + "/",
             nightMode = nightMode,
+            searchQuery = searchQuery,
+            requestedPage = requestedPage,
+            pageRequestId = pageRequestId,
             onPageCountChanged = onPageCountChanged,
             onCurrentPageChanged = onCurrentPageChanged,
             modifier = modifier
@@ -115,10 +123,17 @@ private fun WordPages(
     html: String,
     baseUrl: String,
     nightMode: Boolean,
+    searchQuery: String,
+    requestedPage: Int?,
+    pageRequestId: Int,
     onPageCountChanged: (Int) -> Unit = {},
     onCurrentPageChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val latestNightMode by rememberUpdatedState(nightMode)
+    val latestSearchQuery by rememberUpdatedState(searchQuery)
+    val latestPageCountChanged by rememberUpdatedState(onPageCountChanged)
+    val latestCurrentPageChanged by rememberUpdatedState(onCurrentPageChanged)
     var pageCount by remember(html) { mutableIntStateOf(1) }
     var currentPage by remember(html) { mutableIntStateOf(1) }
     var userScrolling by remember(html) { mutableStateOf(false) }
@@ -135,16 +150,24 @@ private fun WordPages(
         }
     }
 
-    // Dynamic dark mode class toggling in DOM
-    LaunchedEffect(nightMode) {
-        webHolder.view?.evaluateJavascript(
-            "if(document.body){if($nightMode)document.body.classList.add('dark-mode');else document.body.classList.remove('dark-mode');}",
-            null
-        )
+    LaunchedEffect(searchQuery) { if (searchQuery.isEmpty()) webHolder.view?.clearMatches() else webHolder.view?.findAllAsync(searchQuery) }
+    LaunchedEffect(pageRequestId) {
+        requestedPage?.let { page ->
+            webHolder.view?.evaluateJavascript("var sheets=document.querySelectorAll('#pages .sheet');if(sheets[$page])sheets[$page].scrollIntoView();", null)
+        }
     }
 
-    val defaultBg = if (nightMode) android.graphics.Color.parseColor("#0E0C12") else android.graphics.Color.parseColor("#141118")
-    val backdropColor = if (nightMode) androidx.compose.ui.graphics.Color(0xFF0E0C12) else androidx.compose.ui.graphics.Color(0xFF141118)
+    // Only the surrounding canvas follows appearance; the document stays original.
+    val surround = MaterialTheme.colorScheme.surfaceContainer
+    LaunchedEffect(surround) {
+        val rgb = "#%06X".format(surround.toArgb() and 0xFFFFFF)
+        webHolder.view?.setBackgroundColor(surround.toArgb())
+        webHolder.view?.evaluateJavascript("document.body.classList.remove('dark-mode');document.body.style.background='$rgb';document.documentElement.style.background='$rgb';", null)
+    }
+
+    val defaultBg = surround.toArgb()
+    val backdropColor = surround
+    val latestSurround by rememberUpdatedState(surround)
 
     Box(
         modifier = modifier
@@ -157,7 +180,15 @@ private fun WordPages(
                     WebView(ctx).apply {
                         setBackgroundColor(defaultBg)
                         settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
+                        isLongClickable = true
+                        setOnLongClickListener(null)
+                        settings.domStorageEnabled = false
+                        settings.blockNetworkLoads = true
+                        if (android.os.Build.VERSION.SDK_INT >= 29) {
+                            @Suppress("DEPRECATION")
+                            settings.forceDark = android.webkit.WebSettings.FORCE_DARK_OFF
+                        }
+                        if (android.os.Build.VERSION.SDK_INT >= 33) settings.isAlgorithmicDarkeningAllowed = false
                         // Native pinch-to-zoom for the whole document.
                         settings.builtInZoomControls = true
                         settings.displayZoomControls = false
@@ -165,16 +196,17 @@ private fun WordPages(
                         settings.loadWithOverviewMode = true
                         // Lets <img src="media/..."> resolve against baseUrl below.
                         settings.allowFileAccess = true
-                        settings.allowContentAccess = true
+                        settings.allowContentAccess = false
                         WebView.setWebContentsDebuggingEnabled(false)
                         webViewClient = object : WebViewClient() {
                             override fun onPageFinished(view: WebView?, url: String?) {
                                 super.onPageFinished(view, url)
                                 try {
                                     view?.evaluateJavascript(
-                                        "if($nightMode&&document.body)document.body.classList.add('dark-mode');window.__repaginate&&window.__repaginate();",
+                                        "document.body.classList.remove('dark-mode');document.body.style.background='#%06X';document.documentElement.style.background='#%06X';window.__repaginate&&window.__repaginate();".format(latestSurround.toArgb() and 0xFFFFFF, latestSurround.toArgb() and 0xFFFFFF),
                                         null
                                     )
+                                    if (latestSearchQuery.isNotEmpty()) view?.findAllAsync(latestSearchQuery)
                                 } catch (_: Exception) {
                                     // Page not ready; inline script already paginated.
                                 }
@@ -204,11 +236,14 @@ private fun WordPages(
                     }
                     addJavascriptInterface(
                         WordJsBridge { count ->
-                            val c = count.coerceAtLeast(1)
-                            pageCount = c
-                            currentPage = currentPage.coerceIn(1, c)
-                            onPageCountChanged(c)
-                            onCurrentPageChanged(currentPage)
+                            post {
+                                if (webHolder.view == null) return@post
+                                val c = count.coerceAtLeast(1)
+                                pageCount = c
+                                currentPage = currentPage.coerceIn(1, c)
+                                latestPageCountChanged(c)
+                                latestCurrentPageChanged(currentPage)
+                            }
                         },
                         "Android"
                     )
@@ -228,7 +263,7 @@ private fun WordPages(
                                     raw?.trim()?.trim('"')?.toIntOrNull()?.let { page ->
                                         val p = page.coerceIn(1, pageCount.coerceAtLeast(1))
                                         currentPage = p
-                                        onCurrentPageChanged(p)
+                                        latestCurrentPageChanged(p)
                                     }
                                 }
                             } catch (_: Exception) {

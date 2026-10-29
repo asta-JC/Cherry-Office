@@ -26,12 +26,14 @@ class SettingsRepository @Inject constructor(
 
     val themeModeFlow: Flow<String> = context.dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.THEME_MODE] ?: "DARK_GLOSSY"
+            AppearanceMode.fromStored(preferences[PreferencesKeys.THEME_MODE]).name
         }
+
+    val appearanceFlow: Flow<AppearanceMode> = themeModeFlow.map(AppearanceMode::fromStored)
 
     val defaultZoomFlow: Flow<Float> = context.dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.DEFAULT_ZOOM] ?: 1.0f
+            (preferences[PreferencesKeys.DEFAULT_ZOOM] ?: 1.0f).let { if (it.isFinite()) it.coerceIn(1f, 2f) else 1f }
         }
 
     val keepScreenOnFlow: Flow<Boolean> = context.dataStore.data
@@ -41,13 +43,15 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setThemeMode(mode: String) {
         context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.THEME_MODE] = mode
+            preferences[PreferencesKeys.THEME_MODE] = AppearanceMode.fromStored(mode).name
         }
     }
 
+    suspend fun setAppearance(mode: AppearanceMode) = setThemeMode(mode.name)
+
     suspend fun setDefaultZoom(zoom: Float) {
         context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.DEFAULT_ZOOM] = zoom
+            preferences[PreferencesKeys.DEFAULT_ZOOM] = if (zoom.isFinite()) zoom.coerceIn(1f, 2f) else 1f
         }
     }
 

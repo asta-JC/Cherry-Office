@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -145,6 +146,10 @@ fun ZoomableBox(
             return Offset(clampedX, clampedY)
         }
 
+        LaunchedEffect(viewportWidth, viewportHeight) {
+            zoomState.offset = clampOffset(zoomState.scale, zoomState.offset)
+        }
+
         /**
          * Smoothly animates scale and offset to target values (e.g. on double-tap).
          */
@@ -220,6 +225,7 @@ fun ZoomableBox(
                             val zoomFactor = event.calculateZoom()
                             val pan = event.calculatePan()
                             val centroid = event.calculateCentroid()
+                            val previousCentroid = event.calculateCentroid(useCurrent = false)
 
                             val newScale = (oldScale * zoomFactor).coerceIn(
                                 zoomState.minScale,
@@ -230,7 +236,9 @@ fun ZoomableBox(
 
                             // Math: Anchor zoom translation to touch centroid:
                             // offset = (offset - centroid) * (newScale / oldScale) + centroid + pan
-                            val rawOffset = (zoomState.offset - centroid) * scaleRatio + centroid + pan
+                            val anchor = ZoomAnchor(-zoomState.offset.x, -zoomState.offset.y).scaled(
+                                oldScale, newScale, previousCentroid.x, previousCentroid.y, centroid.x, centroid.y)
+                            val rawOffset = Offset(-anchor.scrollX, -anchor.scrollY)
                             val clampedOffset = clampOffset(newScale, rawOffset)
 
                             zoomState.scale = newScale

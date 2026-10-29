@@ -114,8 +114,8 @@ fun CherryDocumentCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         color = colors.card,
-        border = BorderStroke(1.dp, colors.borderFaint),
-        shadowElevation = 2.dp
+
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
@@ -186,11 +186,11 @@ fun CherryDocumentCard(
             ) {
                 IconButton(
                     onClick = onFavoriteToggle,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = if (document.isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
-                        contentDescription = "Favorite",
+                        contentDescription = if (document.isFavorite) "Remove favorite" else "Add favorite",
                         tint = if (document.isFavorite) Color(0xFFFFC107) else colors.textSoftGreyPurple,
                         modifier = Modifier.size(20.dp)
                     )
@@ -199,7 +199,7 @@ fun CherryDocumentCard(
                 Box {
                     IconButton(
                         onClick = { showMenu = true },
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,

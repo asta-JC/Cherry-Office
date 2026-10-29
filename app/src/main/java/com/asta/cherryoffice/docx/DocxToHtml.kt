@@ -15,7 +15,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.Locale
 import java.util.zip.ZipInputStream
-import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 
@@ -159,20 +158,8 @@ private fun deepText(el: Element): String {
     return sb.toString()
 }
 
-private fun parseXml(bytes: ByteArray): org.w3c.dom.Document {
-    val factory = DocumentBuilderFactory.newInstance()
-    factory.isNamespaceAware = true
-    // Security: docx files must not fetch external entities (XXE protection).
-    try {
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false)
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
-    } catch (_: Exception) {
-        // Older parsers may not know these flags; parsing still works.
-    }
-    val builder = factory.newDocumentBuilder()
-    return builder.parse(ByteArrayInputStream(bytes))
-}
+private fun parseXml(bytes: ByteArray): org.w3c.dom.Document =
+    com.asta.cherryoffice.formats.OfficeArchive.xml(bytes)
 
 // ---------------------------------------------------------------------------
 // Unit conversions used by Word.
@@ -1137,7 +1124,7 @@ object DocxToHtmlConverter {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=860, initial-scale=1.0, user-scalable=yes">
+<meta name="viewport" content="width=860, user-scalable=yes">
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:#141118;color:#111827;
@@ -1165,6 +1152,7 @@ h2{font-size:14pt;margin:12px 0 6px;font-weight:bold}
 h3{font-size:12pt;margin:10px 0 5px;font-weight:bold}
 h4{font-size:11pt;margin:8px 0 4px;font-weight:bold}
 h5,h6{font-size:10pt;margin:6px 0 3px}
+p,td,th,li{-webkit-user-select:text;user-select:text}
 p{margin:0 0 10px;line-height:1.45;word-break:normal}p.empty{margin:0 0 4px;min-height:8px}
 ul,ol{margin:4px 0 8px;padding-left:28px}
 li{margin:2px 0}
@@ -1196,9 +1184,13 @@ a{color:#1A56DB}.fnref{text-decoration:none}
 <div id="pages"></div>
 <script>
 (function(){
-var timer=null;
+var timer=null,interacting=false,pending=false;
+var seenImages=Object.create(null);
 var USABLE_H=920;
 function paginate(){
+ var selected=window.getSelection();
+ if(interacting||(selected&&!selected.isCollapsed)){pending=true;return;}
+ pending=false;
  var raw=document.getElementById('raw-blocks');
  var src=document.getElementById('content');
  var pages=document.getElementById('pages');
@@ -1258,10 +1250,28 @@ function paginate(){
 }
 function schedule(){if(timer)clearTimeout(timer);timer=setTimeout(paginate,80);}
 var pages=document.getElementById('pages');
-pages.addEventListener('load',function(e){if(e.target&&e.target.tagName==='IMG')schedule();},true);
+pages.addEventListener('load',function(e){
+ var image=e.target;
+ if(image&&image.tagName==='IMG'&&!seenImages[image.src]){
+  seenImages[image.src]=true;schedule();
+ }
+},true);
+// Rebuilding cloned image nodes must not create an endless load/paginate loop.
+// Native long-press selection must retain its original text nodes.
+document.addEventListener('touchstart',function(){interacting=true;},true);
+document.addEventListener('touchend',function(){interacting=false;if(pending)schedule();},true);
+document.addEventListener('touchcancel',function(){interacting=false;if(pending)schedule();},true);
+document.addEventListener('selectionchange',function(){
+ var selection=window.getSelection();
+ if(pending&&!interacting&&(!selection||selection.isCollapsed))schedule();
+});
 document.addEventListener('DOMContentLoaded',paginate);
 window.addEventListener('load',paginate);
-window.addEventListener('resize',schedule);
+var layoutWidth=pages.offsetWidth;
+window.addEventListener('resize',function(){
+ var nextWidth=pages.offsetWidth;
+ if(nextWidth!==layoutWidth){layoutWidth=nextWidth;schedule();}
+});
 window.__repaginate=schedule;
 window.__currentPage=function(y){
  if(window.__tops&&window.__tops.length>1){

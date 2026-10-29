@@ -8,6 +8,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -26,6 +29,19 @@ fun TextViewer(
     val backgroundColor = if (nightMode) Color(0xFF0A0A0F) else MaterialTheme.colorScheme.surface
     val textColor = if (nightMode) Color(0xFFE0E0E0) else MaterialTheme.colorScheme.onSurface
 
+    val highlighted = remember(textContent, searchQuery) {
+        buildAnnotatedString {
+            append(textContent.ifEmpty { "Document is empty." })
+            if (searchQuery.isNotBlank()) {
+                var start = textContent.indexOf(searchQuery, ignoreCase = true)
+                var matches = 0
+                while (start >= 0 && matches++ < 10000) {
+                    addStyle(SpanStyle(background = Color(0xFFFFE082), color = Color(0xFF312500)), start, start + searchQuery.length)
+                    start = textContent.indexOf(searchQuery, start + searchQuery.length, ignoreCase = true)
+                }
+            }
+        }
+    }
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -35,7 +51,7 @@ fun TextViewer(
     ) {
         SelectionContainer {
             Text(
-                text = textContent.ifBlank { "Document is empty." },
+                text = highlighted,
                 color = textColor,
                 fontFamily = FontFamily.Monospace,
                 fontSize = fontSize.sp,

@@ -58,25 +58,28 @@ object DocumentUtils {
             }
         }
 
+        if (uri.scheme == ContentResolver.SCHEME_FILE) {
+            uri.path?.let { size = java.io.File(it).length() }
+        }
         val rawExtension = if (displayName.contains('.')) {
             displayName.substringAfterLast('.').lowercase(Locale.ROOT)
         } else {
             ""
         }
 
-        var mimeType = contentResolver.getType(uri) ?: ""
+        var mimeType = try { contentResolver.getType(uri).orEmpty().substringBefore(';').trim().lowercase(Locale.ROOT) } catch (_: Exception) { "" }
         if (mimeType.isBlank() || mimeType == "application/octet-stream") {
             if (rawExtension.isNotBlank()) {
                 mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(rawExtension) ?: ""
             }
         }
 
-        if (mimeType.isBlank() || mimeType == "application/octet-stream") {
+        if (mimeType.isBlank() || mimeType in listOf("application/octet-stream", "application/zip")) {
             mimeType = detectMimeTypeFromMagicNumbers(context, uri, rawExtension)
         }
 
         val finalExtension = if (rawExtension.isBlank()) {
-            MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "doc"
+            MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: ""
         } else {
             rawExtension
         }
@@ -111,7 +114,7 @@ object DocumentUtils {
                             "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                             "xlsx" -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                            else -> "application/zip"
+                            else -> detectOfficeContainerMime(context, uri)
                         }
                     }
                     // OLE2 Compound Document (doc, xls, ppt): 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1
@@ -141,6 +144,35 @@ object DocumentUtils {
             // Stream read exception
         }
         return "application/octet-stream"
+    }
+
+    private fun detectOfficeContainerMime(context: Context, uri: Uri): String {
+        // Some providers omit both the extension and the MIME type. Identify the
+        // Office package by its entries, with a strict decompression budget.
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                ZipInputStream(input).use { zip ->
+                    val buffer = ByteArray(4096)
+                    var total = 0
+                    repeat(256) {
+                        val entry = zip.nextEntry ?: return "application/zip"
+                        when {
+                            entry.name == "word/document.xml" -> return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            entry.name == "xl/workbook.xml" -> return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            entry.name == "ppt/presentation.xml" -> return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                        }
+                        while (true) {
+                            val count = zip.read(buffer)
+                            if (count < 0) break
+                            total += count
+                            if (total > 2 * 1024 * 1024) return "application/zip"
+                        }
+                        zip.closeEntry()
+                    }
+                }
+            }
+        } catch (_: Exception) { /* The viewer will report an unreadable package. */ }
+        return "application/zip"
     }
 
     fun extractDocxParagraphs(context: Context, uri: Uri): List<String> {
@@ -262,9 +294,9 @@ object DocumentUtils {
 
         return when {
             mime.contains("pdf") || ext == "pdf" -> DocumentCategory.PDF
-            mime.contains("word") || mime.contains("msword") || mime.contains("officedocument.wordprocessingml") || ext in listOf("doc", "docx") -> DocumentCategory.WORD
-            mime.contains("excel") || mime.contains("ms-excel") || mime.contains("officedocument.spreadsheetml") || ext in listOf("xls", "xlsx", "csv") -> DocumentCategory.EXCEL
-            mime.contains("powerpoint") || mime.contains("ms-powerpoint") || mime.contains("officedocument.presentationml") || ext in listOf("ppt", "pptx") -> DocumentCategory.POWERPOINT
+            mime.contains("word") || mime.contains("msword") || mime.contains("officedocument.wordprocessingml") || ext in listOf("doc", "docx", "docm", "dotx") -> DocumentCategory.WORD
+            mime.contains("excel") || mime.contains("ms-excel") || mime.contains("officedocument.spreadsheetml") || ext in listOf("xls", "xlsx", "xlsm", "xltx", "csv", "tsv") -> DocumentCategory.EXCEL
+            mime.contains("powerpoint") || mime.contains("ms-powerpoint") || mime.contains("officedocument.presentationml") || ext in listOf("ppt", "pptx", "pptm", "potx") -> DocumentCategory.POWERPOINT
             else -> DocumentCategory.OTHER
         }
     }

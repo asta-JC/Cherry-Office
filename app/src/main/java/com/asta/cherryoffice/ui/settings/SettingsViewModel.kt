@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.asta.cherryoffice.data.repository.DocumentRepository
 import com.asta.cherryoffice.data.repository.SettingsRepository
+import com.asta.cherryoffice.data.repository.AppearanceMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,7 +15,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SettingsUiState(
-    val themeMode: String = "DARK_GLOSSY", // "DARK_GLOSSY", "AMOLED_BLACK", "LIGHT_CHERRY"
+    val themeMode: String = "SYSTEM",
+    val isLoaded: Boolean = false,
     val defaultZoom: Float = 1.0f,
     val keepScreenOn: Boolean = false,
     val showAboutDialog: Boolean = false,
@@ -39,6 +41,7 @@ class SettingsViewModel @Inject constructor(
     ) { themeMode, defaultZoom, keepScreenOn, showAbout, snackbarMsg ->
         SettingsUiState(
             themeMode = themeMode,
+            isLoaded = true,
             defaultZoom = defaultZoom,
             keepScreenOn = keepScreenOn,
             showAboutDialog = showAbout,
@@ -55,6 +58,8 @@ class SettingsViewModel @Inject constructor(
             settingsRepository.setThemeMode(mode)
         }
     }
+
+    fun setAppearance(mode: AppearanceMode) = setThemeMode(mode.name)
 
     fun setDefaultZoom(zoom: Float) {
         viewModelScope.launch {

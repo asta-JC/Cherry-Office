@@ -4,22 +4,22 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-val DarkBackground = Color(0xFF0A0A0F)
-val DarkPlumSurface = Color(0xFF1C1520)
-val DarkPlumCard = Color(0xFF1C1520)
+val DarkBackground = Color(0xFF151318)
+val DarkPlumSurface = Color(0xFF211E24)
+val DarkPlumCard = Color(0xFF211E24)
 
-val CherryPrimary = Color(0xFFFF2D55)
-val DeepCherry = Color(0xFF7A0F2A)
-val DarkCherryGlow = Color(0xFF5A0A1E)
+val CherryPrimary = Color(0xFFBE3655)
+val DeepCherry = Color(0xFF752C40)
+val DarkCherryGlow = Color(0xFF35232B)
 
-val CherryBorderTranslucent = Color(0x66FF2D55)
-val CherryBorderFaint = Color(0x33FF2D55)
+val CherryBorderTranslucent = Color(0xFF51474C)
+val CherryBorderFaint = Color(0xFF393238)
 
-val TextWhite = Color(0xFFFFFFFF)
-val TextSoftGreyPurple = Color(0xFF8A7F96)
+val TextWhite = Color(0xFFF1EDF0)
+val TextSoftGreyPurple = Color(0xFFBEB4BB)
 
-val GradientHotCherryStart = Color(0xFFFF1F57)
-val GradientHotCherryEnd = Color(0xFFFF2D6F)
+val GradientHotCherryStart = Color(0xFFBE3655)
+val GradientHotCherryEnd = Color(0xFFBE3655)
 
 @Immutable
 data class CherryColors(
