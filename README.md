@@ -1,129 +1,148 @@
 <div align="center">
-
-# 🍒 Cherry Office
-
-<p align="center">
-  <img src="app/src/main/res/drawable/icon.png" width="108" alt="Cherry Office Logo" />
-</p>
-
-> A fast, offline document viewer for Android featuring PDF, Word (.docx), Excel (.xls / .xlsx), PowerPoint slide previews, images, and text viewing with a quiet cherry-accented interface. 📄✨
-
+  <img src="app/src/main/res/drawable/icon.png" width="96" alt="Cherry Office app icon" />
+  <h1>Cherry Office</h1>
+  <p><strong>A little cherry. More room for your documents.</strong></p>
+  <p>An offline document reader for Android.<br />PDFs, documents, spreadsheets, and slides — together in one quiet space.</p>
+  <p>
+    <img src="https://img.shields.io/badge/version-1.1.0-A82D4B?style=flat-square" alt="Version 1.1.0" />
+    <img src="https://img.shields.io/badge/Android-7.0%2B-3D6B50?style=flat-square" alt="Android 7.0 and newer" />
+    <img src="https://img.shields.io/badge/built_with-Kotlin_%26_Compose-715A64?style=flat-square" alt="Built with Kotlin and Jetpack Compose" />
+  </p>
+  <p>
+    <a href="#screenshots">Screenshots</a> ·
+    <a href="#features">Features</a> ·
+    <a href="#getting-started">Get started</a> ·
+    <a href="https://github.com/asta-JC/Cherry-Office/issues">Feedback</a>
+  </p>
 </div>
 
 ---
 
-## 📱 Overview
+## Overview
 
-**Cherry Office** is a high-performance offline document viewing suite for Android built with Jetpack Compose and Material 3. Designed with a restrained cherry-accented design, it opens PDFs, Word documents (.docx), spreadsheets, presentations, and plain text files with zero external cloud dependencies.
+Cherry Office keeps everyday reading on your device. Open a file from your storage or another app, find it again in your recent files, and read with a light, dark, or AMOLED interface. The original Cherry Office icon and small cherry accents give it a place in the CherryApp family.
 
----
+## Screenshots
 
-## Version 1.1.0
+<table>
+  <tr>
+    <th width="33%">Your library</th>
+    <th width="33%">Slides, with their details</th>
+    <th width="33%">Make it yours</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/library-dark.png" width="250" alt="Cherry Office dark library with sample documents, category filters, favorites, and the Open file button" /></td>
+    <td align="center"><img src="docs/screenshots/slides-light.png" width="250" alt="Cherry Office light PowerPoint viewer showing a slide with an embedded picture, arrow, shapes, and a chart" /></td>
+    <td align="center"><img src="docs/screenshots/settings-dark.png" width="250" alt="Cherry Office dark settings with appearance modes, PDF zoom, and reading preferences" /></td>
+  </tr>
+  <tr>
+    <td align="center">Find, filter, and favorite.</td>
+    <td align="center">Scroll vertically. Pinch for a closer look.</td>
+    <td align="center">Choose how you like to read.</td>
+  </tr>
+</table>
 
-- Visual PowerPoint previews with vertical scrolling, pictures, shapes, lines, tables, and basic charts.
-- Automatic text fitting prevents slide text and final lines from being clipped.
-- Improved PDF text selection, document reading, and spreadsheet compatibility.
-- Subtle cherry accents, with the original app icon preserved.
+Captured on a physical Samsung Galaxy S22 Ultra using the app's production screens. Library filenames and slide content are demonstration data; no personal documents are shown.
 
-## ✨ Key Features
+## Features
 
-- 📕 **PDF Reading & Copy**: Native page rendering via Android's `PdfRenderer`, continuous vertical scrolling, focal-point pinch-to-zoom (1x–5x), one-finger pan, and adjustable text selection.
-- 📝 **Zero-Dependency Word (.docx) Viewer**: Parses Office Open XML directly offline into styled HTML and displays it in white A4 print layout sheets with full table, image, bullet, styling, and footnote support.
-- 📊 **Spreadsheet Reading**: Multi-sheet binary `.xls`, `.xlsx`, `.xlsm`, CSV and TSV previews with number/date formatting, cell styles, saved formula results, search, and cell copying.
-- 📽️ **PowerPoint Slide Preview**: Vertically scrolling `.pptx` slides with positioned text, embedded PNG/JPEG/GIF/WebP pictures, common shapes, lines, tables, and basic saved-value bar/line/pie charts. Pinch zoom and expandable slide text. Custom shapes and advanced chart styling may differ; animations are static and unsupported diagrams show a preview note.
-- 🖼️ **Image Viewing**: Device-supported images with pinch zoom and pan.
-- 📜 **Monospace Text Viewer**: Clean typography for `.txt` and source files with adjustable font sizes, search, and theme-aware controls.
-- 🌐 **Open from Anywhere**: Handles `ACTION_VIEW` and `ACTION_SEND` intents, Storage Access Framework (SAF) file picker, and recent files history.
+- **One library:** recent files, search, type filters, favorites, folder browsing, and sharing.
+- **PDF reading:** continuous vertical pages, pinch zoom, page navigation, and embedded-text selection with adjustable handles.
+- **Word documents:** styled text, tables, pictures, lists, and page layouts from modern Office files.
+- **Spreadsheets:** multiple sheets, number and date formats, saved formula results, cell styles, search, and copying.
+- **Visual slides:** positioned text, pictures, common shapes, lines, tables, and basic charts, with automatic text fitting.
+- **Personal reading:** System, Light, Dark, and AMOLED appearances, saved PDF zoom, and a keep-screen-on option while reading.
 
----
+## Supported formats
 
-## 📄 Supported Formats
+| Format | What you can read |
+| :--- | :--- |
+| PDF | `.pdf` — pages, pictures, and embedded text |
+| Word | `.docx`, `.docm`, `.dotx` — modern Word documents |
+| Excel | `.xls`, `.xlsx`, `.xlsm`, `.xltx` — sheets and saved cell values |
+| PowerPoint | `.pptx`, `.pptm`, `.potx` — static visual slide previews |
+| Tables | `.csv`, `.tsv` — a grid with quoted and multiline fields |
+| Text | `.txt`, `.md`, `.log`, `.json`, `.xml`, `.yaml`, `.yml` |
+| Pictures | Image formats supported by the device's decoder |
 
-| Document Format | Engine / Technology | Key Highlights |
-| :--- | :--- | :--- |
-| **PDF** (`.pdf`) | Android `PdfRenderer` | Continuous scroll, pinch-zoom (1x–5x), page navigation and adjustable text selection |
-| **Word** (`.docx`) | Custom OOXML → HTML Parser | Offline styling, tables, images, hyperlinks, A4 sheet layout |
-| **Excel** (`.xls`, `.xlsx`, `.xlsm`, `.xltx`) | HSSF / OOXML spreadsheet readers | Multi-sheet grid, saved values, number/date formats, cell styles |
-| **PowerPoint** (`.pptx`, `.pptm`, `.potx`) | OOXML → SVG/HTML | Vertical slides, pictures, shapes, lines, tables, basic charts |
-| **CSV / TSV** (`.csv`, `.tsv`) | Delimited-text reader | Quoted multiline fields, BOM handling, sheet grid |
-| **Text** (`.txt`, `.md`, `.log`, `.json`, `.xml`, `.yaml`) | Native Compose Typography | Selectable text, search highlights, adjustable size, night mode |
-| **Images** | Device image decoder | Fit-to-screen, pinch zoom and pan |
-| **Legacy / other Office** (`.doc`, `.ppt`, `.odt`, `.ods`, `.odp`, `.rtf`) | External app handoff | Clear compatibility message and open-with chooser |
+**Preview limits:** Office layouts can differ from the authoring app. PowerPoint animations are static; some diagrams, custom shapes, and advanced chart styling need another office app. Spreadsheet previews show up to 10,000 populated rows and 256 columns per sheet, use saved formula results, and do not recalculate formulas. Scanned PDFs need OCR for text selection; OCR is not included. Older `.doc` / `.ppt` and OpenDocument files use an external-app handoff.
 
-Spreadsheet previews display up to 10,000 populated rows and 256 columns per sheet. Preview notes disclose limits, merged-cell handling, and formula behavior. Formulas use saved results and are not recalculated. Advanced Office layouts can differ from the authoring app; export as PDF for consistent print layout.
+## Getting started
 
-The app offers System, Light, Dark and AMOLED appearances. Document colors and pictures stay original in every appearance. PDF copying uses embedded text with long-press selection and adjustable handles; scanned pages require OCR, which is not included. Keep Screen On applies only during reading, and the saved default PDF zoom is applied when opening files.
+### Requirements
 
-Binary XLS compatibility uses a reproducible `office-compat` module around Apache POI 5.5.1. PDF text extraction uses PDFBox Android 2.0.27.0; page rendering remains native. Upstream license notices are bundled in assets.
+- Android 7.0 / API 24 or newer on a physical device.
+- Android Studio compatible with the project's pinned Gradle and Android Gradle Plugin versions.
+- Android SDK 37. The local build has been verified with JDK 25; the project targets Java 11 bytecode.
 
----
+### Build and run
 
-## 🛠️ Tech Stack & Architecture
-
-- **UI Toolkit**: [Jetpack Compose](https://developer.android.com/jetpack/compose) & [Material 3](https://m3.material.io/)
-- **Navigation**: Jetpack Navigation 3 (`androidx.navigation3`)
-- **Document Engines**: Android `PdfRenderer`, pure-JVM OOXML parser, Android `WebView`
-- **Dependency Injection**: [Hilt](https://dagger.dev/hilt/) (Dagger)
-- **Persistence**: Room Database (recent files history) & DataStore Preferences
-- **Concurrency**: Kotlin Coroutines (`Dispatchers.IO`) & `StateFlow`
-
----
-
-## 📂 Project Structure
-
-```tree
-com.asta.cherryoffice/
-├── data/                   # Document entities, Room database, repositories
-├── di/                     # Hilt DI modules
-├── docx/                   # Pure-JVM DOCX to HTML parser & document file reader
-├── ui/                     # UI components, home screen, settings, theme
-├── viewers/                # Dedicated viewers: PdfViewer, WordViewer, RichDocumentViewer, TextViewer
-├── utils/                  # Document URI helpers, format detection, MIME resolvers
-├── CherryOfficeApplication.kt # Application class
-└── MainActivity.kt         # Entry point activity & intent handler
+```bash
+git clone https://github.com/asta-JC/Cherry-Office.git
+cd Cherry-Office
+./gradlew :app:assembleDebug --max-workers=1
 ```
 
----
+The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`. Connect your physical Android device and run from Android Studio, or install it with:
 
-## 🚀 Getting Started & Build Instructions
+```bash
+adb -s YOUR_DEVICE_SERIAL install -r app/build/outputs/apk/debug/app-debug.apk
+```
 
-### Prerequisites
-- Android Studio Ladybug or newer
-- JDK 17 or higher
-- Android SDK 24+ (Target SDK 34+)
+### Tests
 
-### Build Steps
+```bash
+./gradlew :app:testDebugUnitTest --max-workers=1
+```
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/asta-JC/Cherry-Office.git
-   cd CherryOffice
-   ```
+Device tests and README screenshots run on a physical device. See [the screenshot capture notes](docs/screenshots/README.md) for the reproducible gallery workflow.
 
-2. **Open in Android Studio**:
-   - Open Android Studio and select **Open**.
-   - Navigate to the cloned `CherryOffice` directory and let Gradle sync.
+## Built with
 
-3. **Build & Run**:
-   - Connect a physical Android device.
-   - Run the app via Android Studio or execute via terminal:
-     ```bash
-     ./gradlew :app:assembleDebug
-     ```
+| Layer | Technology |
+| :--- | :--- |
+| Interface | Kotlin, Jetpack Compose, Material 3 |
+| Navigation | Navigation 3 |
+| PDF | Android `PdfRenderer` and PDFBox Android for embedded text |
+| Office documents | Local OOXML readers, SVG/HTML, Android WebView |
+| Legacy Excel | Apache POI HSSF through [`office-compat`](office-compat/README.md) |
+| Local data | Room and DataStore |
+| App structure | Hilt, ViewModels, coroutines, and StateFlow |
 
-4. **Run Unit Tests**:
-   ```bash
-   ./gradlew :app:testDebugUnitTest
-   ```
+<details>
+<summary>Source map</summary>
 
----
+```text
+app/src/main/java/com/asta/cherryoffice/
+├── data/          # Document history, preferences, and repositories
+├── docx/          # Word-to-HTML reader
+├── excel/         # Spreadsheet readers and grid rendering
+├── formats/       # Bounded Office archives and slide graphics
+├── pdf/           # PDF sessions, text selection, and reading surface
+├── ui/            # Library, settings, viewers, components, and theme
+└── utils/         # File metadata, types, and URI helpers
+```
 
-## 📄 License
+</details>
 
-This project is developed as part of Asta's project series. Feel free to use and adapt for personal and educational use!
+## What's new in 1.1.0
+
+- Visual PowerPoint slides with vertical scrolling and pinch zoom.
+- Text fitting that keeps final lines and descenders visible.
+- Improved PDF selection, spreadsheet compatibility, and appearance settings.
+- Subtle cherry details, with the original app icon preserved.
+
+## Feedback
+
+Found a file that does not display correctly? [Open an issue](https://github.com/asta-JC/Cherry-Office/issues) with its format, device model, and steps to reproduce. Use a small, non-sensitive sample when possible.
+
+## License & credits
+
+Cherry Office is part of Asta's project series. The existing project notice permits personal and educational use; this repository does not currently include a standalone license file. Third-party libraries keep their own licenses and notices, bundled in [`app/src/main/assets/third_party`](app/src/main/assets/third_party).
 
 ---
 
 <p align="center">
-  Made with ❤️ & 🍒 by Asta
+  <strong>Made with care &amp; 🍒 by Asta</strong><br />
+  <sub>Part of the CherryApp family.</sub>
 </p>
