@@ -4,12 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.tween
 import androidx.core.view.WindowInsetsCompat
-import com.asta.cherryoffice.ui.launch.LaunchIntro
-import com.asta.cherryoffice.ui.launch.LaunchRed
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -20,7 +15,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
@@ -43,7 +37,6 @@ class MainActivity : ComponentActivity() {
     private val viewerViewModel: ViewerViewModel by viewModels()
 
     private var incomingUri by mutableStateOf<String?>(null)
-    private var launchIntroVisible by mutableStateOf(false)
     private var incomingRequestId by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,19 +44,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         incomingUri = extractUriFromIntent(intent)?.toString()
-        launchIntroVisible = savedInstanceState == null && incomingUri == null && intent.action == Intent.ACTION_MAIN &&
-            (application as CherryOfficeApplication).consumeLaunchIntro()
 
         setContent {
             val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
             CherryTheme(themeMode = if (settingsState.isLoaded) settingsState.themeMode else "DARK") {
-                val background = if (launchIntroVisible) LaunchRed else MaterialTheme.colorScheme.background
+                val background = MaterialTheme.colorScheme.background
                 SideEffect {
                     window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(background.toArgb()))
                     WindowCompat.getInsetsController(window, window.decorView).apply {
-                        if (launchIntroVisible) hide(WindowInsetsCompat.Type.systemBars())
-                        else show(WindowInsetsCompat.Type.systemBars())
+                        show(WindowInsetsCompat.Type.systemBars())
                         isAppearanceLightStatusBars = background.luminance() > .5f
                         isAppearanceLightNavigationBars = background.luminance() > .5f
                     }
@@ -82,9 +72,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-                    AnimatedVisibility(visible = launchIntroVisible, exit = fadeOut(tween(180))) {
-                        LaunchIntro(onFinished = { launchIntroVisible = false })
-                    }
                 }
             }
         }
@@ -94,7 +81,6 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         extractUriFromIntent(intent)?.let { uri ->
-            launchIntroVisible = false
             incomingUri = uri.toString()
             incomingRequestId++
         }

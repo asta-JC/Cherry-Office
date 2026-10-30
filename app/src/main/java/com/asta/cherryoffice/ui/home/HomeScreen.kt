@@ -62,7 +62,7 @@ fun HomeScreenContent(
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }, topBar = {
         TopAppBar(title = { Column {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CherryMark(Modifier.size(24.dp))
+                CherryMark(Modifier.size(32.dp))
                 Text("Cherry Office", style = MaterialTheme.typography.titleLarge)
             }
             Text("Your documents, together", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

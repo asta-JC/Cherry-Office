@@ -23,6 +23,7 @@ import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
 import com.tom_roush.pdfbox.pdmodel.graphics.image.LosslessFactory
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.junit.Assert.*
 import org.junit.Test
@@ -207,18 +208,23 @@ class ReadingInstrumentedTest {
     }
     @Test fun captureHomeAndSettingsAcrossAppearanceModes() {
         val settings = SettingsRepository(context)
-        runBlocking { settings.setThemeMode("DARK") }
-        ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)).use { scenario ->
-            SystemClock.sleep(1200)
-            listOf("DARK", "LIGHT", "AMOLED", "SYSTEM").forEach { mode ->
-                runBlocking { settings.setThemeMode(mode) }
-                SystemClock.sleep(500); screenshot("home-${mode.lowercase()}")
+        val originalMode = runBlocking { settings.themeModeFlow.first() }
+        try {
+            runBlocking { settings.setThemeMode("DARK") }
+            ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)).use { scenario ->
+                SystemClock.sleep(1200)
+                listOf("DARK", "LIGHT", "AMOLED", "SYSTEM").forEach { mode ->
+                    runBlocking { settings.setThemeMode(mode) }
+                    SystemClock.sleep(500); screenshot("home-${mode.lowercase()}")
+                }
+                clickDescription("Settings")
+                listOf("DARK", "LIGHT", "AMOLED", "SYSTEM").forEach { mode ->
+                    runBlocking { settings.setThemeMode(mode) }
+                    SystemClock.sleep(500); screenshot("settings-${mode.lowercase()}")
+                }
             }
-            clickDescription("Settings")
-            listOf("DARK", "LIGHT", "AMOLED", "SYSTEM").forEach { mode ->
-                runBlocking { settings.setThemeMode(mode) }
-                SystemClock.sleep(500); screenshot("settings-${mode.lowercase()}")
-            }
+        } finally {
+            runBlocking { settings.setThemeMode(originalMode) }
         }
     }
 

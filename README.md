@@ -24,7 +24,7 @@
 
 ## Overview
 
-Cherry Office keeps everyday reading on your device. Open a file from your storage or another app, find it again in your recent files, and read with a light, dark, or AMOLED interface. The original Cherry Office icon and small cherry accents give it a place in the CherryApp family.
+Cherry Office keeps everyday reading on your device. Open a file from your storage or another app, find it again in your recent files, and read with a light, dark, or AMOLED interface. The original app icon is preserved, with the full shared CherryApp logo beside the app name. Its transparent light and dark variants follow your selected appearance.
 
 ## Screenshots
 
@@ -75,7 +75,7 @@ Captured on a physical Samsung Galaxy S22 Ultra using the app's production scree
 
 ### Download
 
-Install [Cherry-Office_v1.2.apk](https://github.com/asta-JC/Cherry-Office/releases/download/v1.2/Cherry-Office_v1.2.apk) from [GitHub Releases](https://github.com/asta-JC/Cherry-Office/releases/tag/v1.2). The release includes a SHA-256 checksum file.
+Install [Cherry-Office_v1.2.apk](https://github.com/asta-JC/Cherry-Office/releases/download/v1.2/Cherry-Office_v1.2.apk) from [GitHub Releases](https://github.com/asta-JC/Cherry-Office/releases/tag/v1.2). The release includes a SHA-256 checksum file. This published APK predates the new shared header and direct-startup changes shown below; build the current source to get those updates.
 
 This APK is the debug/test-signed build verified on a physical device. It uses the current development certificate, rather than a separate production signing key.
 
@@ -135,13 +135,11 @@ app/src/main/java/com/asta/cherryoffice/
 
 </details>
 
-## What's new in 1.2
+## Source updates since v1.2
 
-- A short, silent CherryApp Family launch animation with a Skip button.
-- Original 720p video frames at normal speed, displayed without zooming or cropping.
-- Direct document opening and warm returns skip the intro.
-- Automatic playback cleanup keeps the decoder from running after launch.
-
+- Full shared CherryApp header logo, with transparent light and dark variants.
+- Opens directly into the document library, without a launch video or branded intro.
+- Documents opened from other apps continue straight to the viewer.
 
 ## Feedback
 
