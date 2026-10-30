@@ -35,9 +35,9 @@ Cherry Office keeps everyday reading on your device. Open a file from your stora
     <th width="33%">Make it yours</th>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/library-dark.png" width="250" alt="Cherry Office dark library with sample documents, category filters, favorites, and the Open file button" /></td>
+    <td align="center"><img src="docs/screenshots/library-light.png" width="250" alt="Cherry Office light library with sample documents, category filters, favorites, and the Open file button" /></td>
     <td align="center"><img src="docs/screenshots/slides-light.png" width="250" alt="Cherry Office light PowerPoint viewer showing a slide with an embedded picture, arrow, shapes, and a chart" /></td>
-    <td align="center"><img src="docs/screenshots/settings-dark.png" width="250" alt="Cherry Office dark settings with appearance modes, PDF zoom, and reading preferences" /></td>
+    <td align="center"><img src="docs/screenshots/settings-light.png" width="250" alt="Cherry Office light settings with appearance modes, PDF zoom, and reading preferences" /></td>
   </tr>
   <tr>
     <td align="center">Find, filter, and favorite.</td>
@@ -46,7 +46,7 @@ Cherry Office keeps everyday reading on your device. Open a file from your stora
   </tr>
 </table>
 
-Captured on a physical Samsung Galaxy S22 Ultra using the app's production screens. Library filenames and slide content are demonstration data; no personal documents are shown.
+Captured in Light mode on a physical Samsung Galaxy S22 Ultra using the app's production screens. Library filenames and slide content are demonstration data; no personal documents are shown.
 
 ## Features
 

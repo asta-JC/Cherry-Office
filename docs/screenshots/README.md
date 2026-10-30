@@ -4,9 +4,9 @@ The gallery shows real production composables rendered on a physical Samsung Gal
 
 | Asset | Production screen | Theme |
 | --- | --- | --- |
-| `library-dark.png` | `HomeScreenContent` with sample file metadata | Dark |
+| `library-light.png` | `HomeScreenContent` with sample file metadata | Light |
 | `slides-light.png` | `ViewerScreen` opening the demo PPTX | Light |
-| `settings-dark.png` | `SettingsContent` with sample preferences | Dark |
+| `settings-light.png` | `SettingsContent` with sample preferences | Light |
 
 To refresh the gallery, connect a physical device and use its explicit serial:
 

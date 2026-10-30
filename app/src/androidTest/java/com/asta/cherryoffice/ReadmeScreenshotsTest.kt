@@ -50,7 +50,7 @@ class ReadmeScreenshotsTest {
         rule.activity.runOnUiThread {
             val viewer = ViewModelProvider(rule.activity)[ViewerViewModel::class.java]
             rule.activity.setContent {
-                CherryTheme(if (screen.intValue == 1) "LIGHT" else "DARK") {
+                CherryTheme("LIGHT") {
                     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                         when (screen.intValue) {
                             0 -> HomeScreenContent(
@@ -60,7 +60,7 @@ class ReadmeScreenshotsTest {
                                 onSearchQueryChange = {}, onToggleSearch = {}, onDocumentClick = {},
                                 onFavoriteToggle = { _, _ -> }, onDeleteDocument = {}, onShareDocument = {}, onSettingsClick = {})
                             1 -> ViewerScreen(viewer, Uri.fromFile(file), onBackClick = {})
-                            else -> SettingsContent(SettingsUiState(themeMode = "DARK", isLoaded = true),
+                            else -> SettingsContent(SettingsUiState(themeMode = "LIGHT", isLoaded = true),
                                 onBack = {}, onAppearance = {}, onZoom = {}, onKeepOn = {}, onClear = {})
                         }
                     }
@@ -74,11 +74,11 @@ class ReadmeScreenshotsTest {
             val bitmap = rule.onRoot().captureToImage().asAndroidBitmap()
             File(output, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
-        capture("library-dark")
+        capture("library-light")
         rule.runOnIdle { screen.intValue = 1 }
         rule.waitUntil(10000) { !ViewModelProvider(rule.activity)[ViewerViewModel::class.java].uiState.value.isLoading }
         capture("slides-light")
         rule.runOnIdle { screen.intValue = 2 }
-        capture("settings-dark")
+        capture("settings-light")
     }
 }
